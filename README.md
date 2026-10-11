@@ -1,79 +1,115 @@
-# TrustRisk-WDS
+# TrustRisk-WDS: Trust-Gated Alert Triage & Hydraulic Risk Prioritization for Water Distribution Systems
 
-**Trust-Aware Cyber-Physical Risk Intelligence and Critical Asset Protection Framework for Smart Water Distribution Systems**
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Tests Passing](https://img.shields.io/badge/pytest-23%20passed-brightgreen.svg)](tests/)
+[![Dataset: BATADAL](https://img.shields.io/badge/dataset-BATADAL%20(C--Town)-orange.svg)](data/)
+[![Replication: 1--Command](https://img.shields.io/badge/reproduce_all.py-verified-success.svg)](reproduce_all.py)
 
-TrustRisk-WDS is a comprehensive security framework designed for Smart Water Distribution Systems (SWDS). It goes beyond traditional anomaly detection by introducing a **Trust-Aware** validation mechanism. It calculates the structural vulnerability of the physical water network and combines it with dynamic AI trust metrics (Prediction Confidence, Epistemic Uncertainty, and Explanation Reliability) to help utility operators make reliable, informed decisions when an attack alert is generated.
+**TrustRisk-WDS** is an end-to-end cyber-physical security framework for municipal Water Distribution Systems (WDS). It resolves the central operational bottleneck of modern ICS anomaly detection: **alert fatigue and disruptive false actuator shutdowns**. 
 
-This project represents the final, mathematically rigorous research implementation based on the **Seven-Phase Master Implementation Roadmap**.
+By evaluating incoming detection residuals through a tripartite **Trust-Gating Engine** (calibrated prediction confidence, ensemble epistemic uncertainty, and explanation reliability) coupled with a **Physics-Grounded Hydraulic Consequence Layer** (EPANET simulation in WNTR), TrustRisk-WDS automatically isolates false alarms into an asynchronous human review queue while escalating real cyber-physical attacks to immediate automated response.
 
-## The 7-Phase Architecture
+---
 
-1. **Phase 1: Project Setup & Data Preprocessing:** Strict chronological sequence extraction of the BATADAL dataset, avoiding temporal leakage and preserving the natural time-series progression for train/val/test splits.
-2. **Phase 2: Cyber-Physical Network & Physics Layer:** Implementation of formal physical risk engines based on C-Town EPANET topology:
-   * **MDCI** (Asset Criticality via Structural Centrality)
-   * **ASS** (Attack Susceptibility via Cyber-Exposure)
-   * **ISS** (Impact Severity via Flow/Demand Metrics)
-   * **CRI** (Cascading Risk via Hydraulic Reachability)
-3. **Phase 3: AI-Based Intrusion Detection Layer:** Implementation of the **LightEdge-IDS** model—a Spatio-Temporal Graph Neural Network coupled with a Gated Recurrent Unit (GNN-GRU) built on a sensor-focused subgraph. (Also includes an unsupervised LSTM Autoencoder baseline).
-4. **Phase 4: Trust & Reliability Evaluation Layer:**
-   * **Probability Calibration:** LBFGS Negative Log-Likelihood optimization for Temperature Scaling.
-   * **Uncertainty Quantification:** Monte Carlo (MC) Dropout for predictive variance and entropy.
-   * **Explanation Reliability (ERS):** Formalized ERS using the Normalized Information Entropy of SHAP values.
-5. **Phase 5: TrustRisk Intelligence Integration Layer:** Computes the Trust-Aware Dynamic Cyber Risk Index (TDCRI) and solves the Trust-aware Prioritized Protection Index (TPPI) using a **0/1 Knapsack Dynamic Programming Optimizer** for security resource allocation.
-6. **Phase 6: Decision Support Dashboard:** An interactive Streamlit application deployed over the real-time test stream to visualize live alerts, WDS physical topology, and TPPI investment recommendations.
-7. **Phase 7: Experimental Validation:** Strict adherence to data contracts preventing target leakage, utilizing properly formatted validation sets to evaluate ROC-AUC and F1 scores.
+## Headline Findings on Official Quarantined BATADAL Test Benchmark
+
+1. **100.0% False-Alarm Event Elimination in Action Tier**: Trust-gated triage eliminates all 3 of 3 persistence false alarms (and 4 of 4 raw threshold alarms) from the immediate automated response tier.
+2. **Zero Attack Loss (100% Attack Recall)**: All 7 of 7 ground-truth cyber-physical attacks are preserved across action and review tiers (6 in immediate action, 1 in human review).
+3. **Rigorous Pointwise Evaluation (No Metric Inflation)**:
+   - **Pointwise F1**: **0.8368** (95% CI: $[0.8083, 0.8659]$, Precision: 0.9677, Recall: 0.7371)
+   - **Point-Adjusted F1**: **0.9879** (Precision: 0.9760, Recall: 1.0000)
+   - **ROC-AUC**: **0.9180** | **PR-AUC**: **0.8684**
+4. **Physical Consequence Grounding**: We demonstrate that graph betweenness centrality alone fails to predict hydraulic consequence ($\rho = -0.1932$), whereas our Cyber-Physical Base Risk strongly correlates with simulated pressure deficits ($\rho = \mathbf{+0.6158}, p = 1.06 \times 10^{-4}$).
+
+---
+
+## Quickstart & Replication
+
+### 1. Installation
+Clone the repository and install the pinned dependencies:
+```bash
+git clone https://github.com/shinojacob7/TrustRisk_WDS.git
+cd TrustRisk_WDS
+pip install -r requirements.txt
+```
+
+### 2. One-Command Full Pipeline Reproduction
+To re-run data card verification, trust calibration, WNTR hydraulic simulation, the core alert triage experiment, and print all 5 manuscript tables verbatim:
+```bash
+python reproduce_all.py
+```
+*(Runs in ~25 seconds on a standard desktop).*
+
+### 3. Run the Automated Test Suite
+To verify leakage guards, unit tests, trust engine calibration, and risk constraints:
+```bash
+pytest -q
+```
+*(Expected: 23 passed in ~2.5s).*
+
+### 4. Launch the Decision Support Dashboard
+To launch the interactive operational dashboard bound strictly to the clean pipeline outputs:
+```bash
+streamlit run dashboard/app.py
+```
+
+---
+
+## Canonical Manuscript Tables
+
+| Table | Content | Generating Script / Source | Result Summary |
+| :--- | :--- | :--- | :--- |
+| **Table 1** | **Benchmark Data Card** | `experiments/data_card.py` | Dataset 03 (8,761h normal), Dataset 04 (3,958h `-999` unlabelled, 219h attack), Test (1,682h normal, 407h attack). |
+| **Table 2** | **Frozen Detector Evaluation** | `results/v3/test_report.json` | Pointwise F1 = 0.8368, PA F1 = 0.9879, 7/7 attacks detected, 3 false alarms in 12.4 weeks. |
+| **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.7%); UQS Error AUROC = 0.5945 (> 0.50); ERS drops on false alarms. |
+| **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6158$ ($p = 1.06 \times 10^{-4}$); Top-10 Kendall $\tau = 1.0000$; TPPI Knapsack ($11$ assets, \$480k). |
+| **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Policy 4 eliminates 100% of Action tier false alarms; preserves 7/7 attacks; mean operational response delay = 6.86h. |
+
+---
 
 ## Project Structure
 
 ```text
 TrustRisk-WDS/
 ├── data/
-│   ├── raw/                 # Raw BATADAL CSV datasets
-│   ├── processed/           # Scaled datasets
-│   └── splits/              # Strict chronological train/val/test splits
+│   ├── raw/                 # Official BATADAL datasets (Dataset 03, 04, Test Labeled)
+│   └── v2/                  # Strict cross-validation folds and metadata
 ├── network/
-│   ├── epanet/              # EPANET .INP files
-│   ├── graph/               # C-Town NetworkX graph (.pkl)
-│   └── mappings/            # BATADAL sensor to EPANET node mappings
-├── preprocessing/           # Data cleaning and chronological sliding window generators
-├── risk/                    # Formal mathematical Risk Engine (MDCI, ASS, ISS, CRI)
-├── models/                  # AI Intrusion Detection Models
-│   ├── baselines/           # Temporal BiLSTM Baseline
-│   ├── lstm_autoencoder/    # Unsupervised Anomaly Detection
-│   └── gnn_gru/             # LightEdge-IDS (GNN-GRU) Model
-├── trust/                   # Calibration, MC Dropout, and SHAP ERS Evaluators
-├── integration/             # TDCRI formulation and TPPI 0/1 Knapsack Solver
-├── dashboard/               # Streamlit Real-Time Monitoring UI
-├── experiments/             # Configs, run logs, and results
-├── tests/                   # Unit tests
-├── docs/                    # Project documentation and PDFs
-└── requirements.txt         # Python dependencies
+│   └── epanet/CTOWN.INP     # Official C-Town EPANET hydraulic network
+├── models/
+│   └── trust/               # Unified Trust Engine (Platt PCS, Ensemble UQS, Perturbation ERS)
+├── risk/
+│   └── hydraulic_simulation.py  # WNTR EPANET hydraulic outage engine & TPPI Knapsack
+├── experiments/
+│   ├── data_card.py         # Data Card & label semantics verification
+│   ├── run_trust_calibration.py  # Phase 3 calibration & UQS/ERS validation
+│   ├── run_core_triage_experiment.py  # Phase 5 headline 5-policy triage matrix
+│   └── v3_residual/         # Frozen residual detector (run_cv.py, run_test_once.py)
+├── results/
+│   ├── data_card.md         # Official Data Card table
+│   ├── frozen_detector_test_report.md  # Single-shot frozen test evaluation report
+│   ├── calibration_report.md  # ECE, Brier, NLL, and UQS discriminative validity
+│   ├── risk_validation.md   # WNTR Spearman correlation and Top-10 sensitivity
+│   ├── core_triage_experiment.md  # Headline 5-policy triage comparison table
+│   └── v3/
+│       ├── test_report.json # Single-shot frozen test report (re-run blocker active)
+│       └── trust_pipeline_clean.csv  # Clean per-hour triage stream
+├── dashboard/
+│   └── app.py               # Streamlit SOC dashboard (bound 1:1 to clean pipeline)
+├── docs/
+│   └── MANUSCRIPT_REVISION.md  # Comprehensive manuscript text with all 5 tables
+├── tests/                   # Full pytest suite (23 passing tests)
+├── archive/                 # Quarantined legacy scripts and non-reportable code
+├── frozen_config.json       # Pre-committed frozen hyperparameters (Ridge α=10.0, q=99.0)
+├── reproduce_all.py         # Master one-command replication suite
+└── requirements.txt         # Pinned Python dependencies
 ```
 
-## Setup & Installation
+---
 
-Ensure you have Python 3.8+ installed, then install the required dependencies:
+## Scientific Rigor & Methodological Guarantees
 
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-**1. Generate Chronological Data Splits (Phase 1)**
-```bash
-python preprocessing/build_dataset.py
-```
-
-**2. Train the Models (Phase 3)**
-To train the LightEdge-IDS (GNN-GRU) model:
-```bash
-python models/gnn_gru/train_gnn_gru.py
-```
-
-**3. Launch the Interactive Decision Support Dashboard (Phase 6/7)**
-To view the live alert simulation against the true chronological test dataset:
-```bash
-streamlit run dashboard/app.py
-```
-This will start a local server and automatically open the dashboard in your default web browser.
+- **Single-Shot Quarantined Test Evaluation**: `BATADAL_test_dataset_labeled.csv` was evaluated strictly once after committing `frozen_config.json`. A hard rerun blocker guard in `results/v3/test_report.json` prevents multiple test sweeps.
+- **Label Integrity**: Unlabelled rows (`-999` in Dataset 04) are strictly quarantined (`LABEL = -999, TRAIN_MASK = 0, EVAL_MASK = 0`) and never assumed normal.
+- **Honest Metric Reporting**: We mandate that pointwise metrics are reported side-by-side with point-adjusted metrics to prevent inflated performance claims.
+- **Operational Delay Transparency**: We transparently document the mean 6.86h operational response delay (up to 10–11h for low-magnitude stealthy attacks).
