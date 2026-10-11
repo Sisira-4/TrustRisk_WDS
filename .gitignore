@@ -8,7 +8,7 @@ __pycache__/
 *.pth
 *.pkl
 *.npy
-archive/
 
 # Data artifacts and scratch
 data/zones/
+
