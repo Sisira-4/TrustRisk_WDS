@@ -1,0 +1,126 @@
+{
+  "config": "v3_residual_ridge",
+  "rows": 2089,
+  "attack_hours": 407,
+  "prevalence": 0.1948,
+  "threshold": 7.4532,
+  "pointwise_primary": {
+    "F1": 0.8368,
+    "precision": 0.9677,
+    "recall": 0.7371,
+    "TP": 300,
+    "FN": 107,
+    "FP": 10,
+    "TN": 1672
+  },
+  "point_adjusted_primary": {
+    "F1": 0.9879,
+    "precision": 0.976,
+    "recall": 1.0,
+    "TP": 407,
+    "FN": 0,
+    "FP": 10,
+    "TN": 1672
+  },
+  "pointwise_raw": {
+    "F1": 0.8115,
+    "precision": 0.9792,
+    "recall": 0.6929,
+    "TP": 282,
+    "FN": 125,
+    "FP": 6,
+    "TN": 1676
+  },
+  "point_adjusted_raw": {
+    "F1": 0.9927,
+    "precision": 0.9855,
+    "recall": 1.0,
+    "TP": 407,
+    "FN": 0,
+    "FP": 6,
+    "TN": 1676
+  },
+  "bootstrap_f1_95ci": [
+    0.8083,
+    0.8659
+  ],
+  "roc_auc": 0.918,
+  "pr_auc": 0.8684,
+  "events_detected": "7/7",
+  "false_alarm_events": 3,
+  "always_alarm_F1": 0.3261,
+  "per_event": [
+    {
+      "event": 1,
+      "start": 297,
+      "end": 366,
+      "hours": 70,
+      "hours_detected": 44,
+      "detected": true,
+      "recall": 0.629,
+      "delay_h": 7
+    },
+    {
+      "event": 2,
+      "start": 632,
+      "end": 696,
+      "hours": 65,
+      "hours_detected": 20,
+      "detected": true,
+      "recall": 0.308,
+      "delay_h": 11
+    },
+    {
+      "event": 3,
+      "start": 867,
+      "end": 897,
+      "hours": 31,
+      "hours_detected": 29,
+      "detected": true,
+      "recall": 0.935,
+      "delay_h": 2
+    },
+    {
+      "event": 4,
+      "start": 937,
+      "end": 967,
+      "hours": 31,
+      "hours_detected": 29,
+      "detected": true,
+      "recall": 0.935,
+      "delay_h": 2
+    },
+    {
+      "event": 5,
+      "start": 1229,
+      "end": 1328,
+      "hours": 100,
+      "hours_detected": 98,
+      "detected": true,
+      "recall": 0.98,
+      "delay_h": 1
+    },
+    {
+      "event": 6,
+      "start": 1574,
+      "end": 1653,
+      "hours": 80,
+      "hours_detected": 71,
+      "detected": true,
+      "recall": 0.887,
+      "delay_h": 1
+    },
+    {
+      "event": 7,
+      "start": 1940,
+      "end": 1969,
+      "hours": 30,
+      "hours_detected": 9,
+      "detected": true,
+      "recall": 0.3,
+      "delay_h": 10
+    }
+  ],
+  "DIAGNOSTIC_ONLY_oracle_threshold_F1": 0.8377,
+  "note": "Frozen single-shot evaluation on official BATADAL test set. Pointwise and PA metrics reported side-by-side."
+}
