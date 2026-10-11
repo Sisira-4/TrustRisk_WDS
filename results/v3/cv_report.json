@@ -1,0 +1,282 @@
+[
+  {
+    "quantile": 90,
+    "persistence_3of6": false,
+    "TP": 176,
+    "FN": 43,
+    "FP": 376,
+    "TN": 3101,
+    "TPR": 0.804,
+    "FPR_per_hr": 0.1081,
+    "FA_events_per_week": 12.71,
+    "precision_cv": 0.319,
+    "F1_pointwise_cv": 0.457,
+    "projected_F1_at_prevalence": 0.714,
+    "per_event_delay_h": [
+      0,
+      6,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.81,
+      0.433,
+      1.0,
+      1.0,
+      0.986
+    ]
+  },
+  {
+    "quantile": 90,
+    "persistence_3of6": true,
+    "TP": 185,
+    "FN": 34,
+    "FP": 140,
+    "TN": 3337,
+    "TPR": 0.845,
+    "FPR_per_hr": 0.0403,
+    "FA_events_per_week": 1.01,
+    "precision_cv": 0.569,
+    "F1_pointwise_cv": 0.68,
+    "projected_F1_at_prevalence": 0.84,
+    "per_event_delay_h": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      1.0,
+      0.433,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "quantile": 95,
+    "persistence_3of6": false,
+    "TP": 165,
+    "FN": 54,
+    "FP": 210,
+    "TN": 3267,
+    "TPR": 0.753,
+    "FPR_per_hr": 0.0604,
+    "FA_events_per_week": 6.14,
+    "precision_cv": 0.44,
+    "F1_pointwise_cv": 0.556,
+    "projected_F1_at_prevalence": 0.752,
+    "per_event_delay_h": [
+      0,
+      19,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.738,
+      0.3,
+      1.0,
+      1.0,
+      0.986
+    ]
+  },
+  {
+    "quantile": 95,
+    "persistence_3of6": true,
+    "TP": 174,
+    "FN": 45,
+    "FP": 108,
+    "TN": 3369,
+    "TPR": 0.795,
+    "FPR_per_hr": 0.0311,
+    "FA_events_per_week": 0.63,
+    "precision_cv": 0.617,
+    "F1_pointwise_cv": 0.695,
+    "projected_F1_at_prevalence": 0.826,
+    "per_event_delay_h": [
+      0,
+      44,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.976,
+      0.267,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "quantile": 97,
+    "persistence_3of6": false,
+    "TP": 160,
+    "FN": 59,
+    "FP": 150,
+    "TN": 3327,
+    "TPR": 0.731,
+    "FPR_per_hr": 0.0431,
+    "FA_events_per_week": 3.77,
+    "precision_cv": 0.516,
+    "F1_pointwise_cv": 0.605,
+    "projected_F1_at_prevalence": 0.766,
+    "per_event_delay_h": [
+      0,
+      19,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.738,
+      0.217,
+      1.0,
+      1.0,
+      0.986
+    ]
+  },
+  {
+    "quantile": 97,
+    "persistence_3of6": true,
+    "TP": 168,
+    "FN": 51,
+    "FP": 100,
+    "TN": 3377,
+    "TPR": 0.767,
+    "FPR_per_hr": 0.0288,
+    "FA_events_per_week": 0.48,
+    "precision_cv": 0.627,
+    "F1_pointwise_cv": 0.69,
+    "projected_F1_at_prevalence": 0.814,
+    "per_event_delay_h": [
+      0,
+      47,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.976,
+      0.167,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "quantile": 99,
+    "persistence_3of6": false,
+    "TP": 154,
+    "FN": 65,
+    "FP": 78,
+    "TN": 3399,
+    "TPR": 0.703,
+    "FPR_per_hr": 0.0224,
+    "FA_events_per_week": 0.97,
+    "precision_cv": 0.664,
+    "F1_pointwise_cv": 0.683,
+    "projected_F1_at_prevalence": 0.783,
+    "per_event_delay_h": [
+      0,
+      19,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.69,
+      0.183,
+      0.973,
+      1.0,
+      0.973
+    ]
+  },
+  {
+    "quantile": 99,
+    "persistence_3of6": true,
+    "TP": 162,
+    "FN": 57,
+    "FP": 81,
+    "TN": 3396,
+    "TPR": 0.74,
+    "FPR_per_hr": 0.0233,
+    "FA_events_per_week": 0.39,
+    "precision_cv": 0.667,
+    "F1_pointwise_cv": 0.701,
+    "projected_F1_at_prevalence": 0.806,
+    "per_event_delay_h": [
+      0,
+      49,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.881,
+      0.133,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "quantile": 99.5,
+    "persistence_3of6": false,
+    "TP": 149,
+    "FN": 70,
+    "FP": 71,
+    "TN": 3406,
+    "TPR": 0.68,
+    "FPR_per_hr": 0.0204,
+    "FA_events_per_week": 0.82,
+    "precision_cv": 0.677,
+    "F1_pointwise_cv": 0.679,
+    "projected_F1_at_prevalence": 0.771,
+    "per_event_delay_h": [
+      0,
+      27,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.667,
+      0.167,
+      0.946,
+      1.0,
+      0.945
+    ]
+  },
+  {
+    "quantile": 99.5,
+    "persistence_3of6": true,
+    "TP": 162,
+    "FN": 57,
+    "FP": 68,
+    "TN": 3409,
+    "TPR": 0.74,
+    "FPR_per_hr": 0.0196,
+    "FA_events_per_week": 0.29,
+    "precision_cv": 0.704,
+    "F1_pointwise_cv": 0.722,
+    "projected_F1_at_prevalence": 0.813,
+    "per_event_delay_h": [
+      0,
+      49,
+      0,
+      0,
+      0
+    ],
+    "per_event_coverage": [
+      0.881,
+      0.133,
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
+]
