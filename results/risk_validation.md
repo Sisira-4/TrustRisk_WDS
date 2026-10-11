@@ -27,7 +27,7 @@ Measured exact physical consequences: **Pressure Deficit** (m$\cdot$h) and **Aff
   Demonstrates that pure graph topological centrality (betweenness/closeness) alone fails to predict physical consequences, because transmission corridors have low local demand despite immense downstream hydraulic impact.
 - **Validation of Multi-Dimensional Criticality (MDCI)**:
   $$\rho(\text{MDCI}, \text{Hydraulic Impact ISS}) = \mathbf{+0.3461} \quad (p = 0.0449)$$
-  $$\rho(\text{Cyber-Physical Base Risk}, \text{Hydraulic Impact ISS}) = \mathbf{+0.6158} \quad (p = 1.06 \times 10^{-4})$$
+  $$\rho(\text{Cyber-Physical Base Risk}, \text{Hydraulic Impact ISS}) = \mathbf{+0.6158} \quad (p = 1.06e-04)$$
   Statistically validates that our physics-grounded Cyber-Physical Risk formulation strongly aligns with empirical hydraulic consequences, resolving the "Risk Ranking Accuracy" requirement.
 - **$\pm 20\%$ Weight Perturbation Sensitivity (Kendall's $\tau$)**:
   $$\tau(\text{Top-10 Baseline}, \text{Top-10 Perturbed}) = \mathbf{1.0000}$$
@@ -40,17 +40,17 @@ Optimal protection allocation under budget constraint ($B = \$500\text{k}$) usin
 
 | Selected Asset | Type | Unit Cost | Protection Benefit | TPPI Priority Score |
 | :---: | :---: | :---: | :---: | :---: |
-| **J317** | Junction | $40k | 0.70 | 0.003049 |
-| **J307** | Junction | $40k | 0.70 | 0.003052 |
-| **J306** | Junction | $40k | 0.70 | 0.003018 |
-| **J302** | Junction | $40k | 0.70 | 0.003043 |
-| **J415** | Junction | $40k | 0.70 | 0.003060 |
-| **J289** | Junction | $40k | 0.70 | 0.003096 |
-| **J256** | Junction | $40k | 0.70 | 0.003052 |
-| **J300** | Junction | $40k | 0.70 | 0.003090 |
-| **J269** | Junction | $40k | 0.70 | 0.003125 |
-| **J280** | Junction | $40k | 0.70 | 0.003160 |
-| **v1** | Valve | $80k | 0.80 | 0.006173 |
+| **J317** | Junction | \$40k | 0.70 | 0.003049 |
+| **J307** | Junction | \$40k | 0.70 | 0.003052 |
+| **J306** | Junction | \$40k | 0.70 | 0.003018 |
+| **J302** | Junction | \$40k | 0.70 | 0.003043 |
+| **J415** | Junction | \$40k | 0.70 | 0.003060 |
+| **J289** | Junction | \$40k | 0.70 | 0.003096 |
+| **J256** | Junction | \$40k | 0.70 | 0.003052 |
+| **J300** | Junction | \$40k | 0.70 | 0.003090 |
+| **J269** | Junction | \$40k | 0.70 | 0.003125 |
+| **J280** | Junction | \$40k | 0.70 | 0.003160 |
+| **v1** | Valve | \$80k | 0.80 | 0.006173 |
 
 - **Total Budget Allocated**: **$480k / $500k**
 - **Selected Assets Protected**: **11 components**
