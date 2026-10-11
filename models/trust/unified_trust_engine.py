@@ -57,8 +57,9 @@ class PredictionConfidenceCalibrator:
         return self.calibrator.predict_proba(X)[:, 1]
 
     def compute_pcs(self, probs):
-        probs = np.asarray(probs, dtype=float)
-        return np.maximum(probs, 1.0 - probs)
+        """Alert confidence: calibrated probability that the triggered event is an attack."""
+        return np.asarray(probs, dtype=float)
+
 
 
 class EpistemicUncertaintyQuantifier:

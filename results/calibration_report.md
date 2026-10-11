@@ -33,6 +33,6 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
 - **Canonical Formula**:  
   $$TS_t = 0.45 \cdot PCS_t + 0.35 \cdot (1 - UQS_t) + 0.20 \cdot ERS_t$$
 - **Calibrated Triage Bands on Test Set**:
-  - **ACTION ($TS \ge 0.80$)**: 1998 hours
-  - **REVIEW ($0.50 \le TS < 0.80$)**: 91 hours
-  - **MONITOR ($TS < 0.50$)**: 0 hours
+  - **ACTION ($TS \ge 0.80$)**: 173 hours
+  - **REVIEW ($0.50 \le TS < 0.80$)**: 1582 hours
+  - **MONITOR ($TS < 0.50$)**: 334 hours
