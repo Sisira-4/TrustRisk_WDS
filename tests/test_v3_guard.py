@@ -45,3 +45,16 @@ def test_pool_excludes_margin_and_labelled_rows():
     lab = np.full(500, -999); lab[200:210] = 1
     pool = margin_free_pool(lab, 48)
     assert not ((pool >= 152) & (pool <= 257)).any() and 0 not in pool
+
+
+def test_pipeline_modules_do_not_import_test_set():
+    """Verify that integration and risk modules do not load test datasets directly."""
+    for module_dir in ["integration", "risk"]:
+        dir_path = Path(__file__).resolve().parents[1] / module_dir
+        if not dir_path.exists():
+            continue
+        for f in dir_path.glob("*.py"):
+            txt = f.read_text(encoding="utf-8").lower()
+            for bad in ["batadal_test_dataset", "test_dataset_labeled"]:
+                assert bad not in txt, f"{f.name} in {module_dir} references test set ({bad})"
+

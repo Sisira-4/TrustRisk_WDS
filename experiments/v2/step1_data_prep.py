@@ -39,7 +39,7 @@ for fold, ev_idx in enumerate(event_splits):
     
     # Validation Attack (from dataset04, ONLY scoring the ATT_FLAG == 1 rows)
     val_attack_df = df4.iloc[event_with_margin_indices].copy()
-    val_attack_df['LABEL'] = (val_attack_df['ATT_FLAG'] == 1).astype(int)
+    val_attack_df['LABEL'] = np.where(val_attack_df['ATT_FLAG'] == 1, 1, np.where(val_attack_df['ATT_FLAG'] == -999, -999, 0))
     # Exclude -999 from scoring completely
     val_attack_df['EVAL_MASK'] = (val_attack_df['ATT_FLAG'] == 1).astype(int) 
     
@@ -54,7 +54,7 @@ for fold, ev_idx in enumerate(event_splits):
     # Training Attack/Masked (dataset04 minus the event and its margin)
     train_df4_idx = np.setdiff1d(np.arange(len(df4)), event_with_margin_indices)
     train_df4 = df4.iloc[train_df4_idx].copy()
-    train_df4['LABEL'] = (train_df4['ATT_FLAG'] == 1).astype(int)
+    train_df4['LABEL'] = np.where(train_df4['ATT_FLAG'] == 1, 1, np.where(train_df4['ATT_FLAG'] == -999, -999, 0))
     # Mask out the -999 unlabeled rows from training loss!
     train_df4['TRAIN_MASK'] = (train_df4['ATT_FLAG'] != -999).astype(int)
     

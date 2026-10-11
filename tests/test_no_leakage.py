@@ -44,3 +44,33 @@ def test_scaler_fitting_inside_folds():
                 # We expect to see something like scaler.fit(train_df...)
                 assert re.search(r'\.fit(_transform)?\(.*(train|_tr)', content, re.IGNORECASE) or 'step1' in basename, \
                     f"Scaler fitted improperly or without explicit 'train' reference in {basename}."
+
+def test_negative_999_never_mapped_to_normal_in_folds():
+    """Verify that in all CV folds, rows with ATT_FLAG == -999 are not marked as normal (0)."""
+    import pandas as pd
+    root = os.path.dirname(os.path.dirname(__file__))
+    v2_data = os.path.join(root, 'data', 'v2')
+    if not os.path.exists(v2_data):
+        return
+        
+    for fname in os.listdir(v2_data):
+        if fname.startswith('fold_') and fname.endswith('_val.csv'):
+            fpath = os.path.join(v2_data, fname)
+            df = pd.read_csv(fpath)
+            if 'ATT_FLAG' in df.columns and 'LABEL' in df.columns:
+                unlabelled = df[df['ATT_FLAG'] == -999]
+                assert not (unlabelled['LABEL'] == 0).any(), f"Found -999 rows cast to 0 in {fname}"
+
+def test_data_card_consistency():
+    """Verify that results/data_card.md exists and accurately reflects the raw data."""
+    root = os.path.dirname(os.path.dirname(__file__))
+    card_path = os.path.join(root, 'results', 'data_card.md')
+    assert os.path.exists(card_path), "results/data_card.md must exist (run experiments/data_card.py)"
+    with open(card_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    assert "8761" in content, "Dataset 03 row count missing"
+    assert "4177" in content, "Dataset 04 row count missing"
+    assert "3958" in content, "Dataset 04 unlabelled (-999) count missing"
+    assert "2089" in content, "Test set row count missing"
+    assert "-999" in content and "Unlabelled" in content
+
