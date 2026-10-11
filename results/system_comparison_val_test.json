@@ -1,0 +1,94 @@
+{
+    "Validation_Dataset": {
+        "Previous_System": {
+            "Accuracy": 0.902,
+            "Precision": 0.2857,
+            "Recall": 0.0452,
+            "F1": 0.078,
+            "PA_Precision": 0.52,
+            "PA_Recall": 0.2938,
+            "PA_F1": 0.3755,
+            "ROC_AUC": 0.612,
+            "Confusion_Matrix": {
+                "TN": 1892,
+                "FP": 20,
+                "FN": 169,
+                "TP": 8
+            },
+            "PA_Confusion_Matrix": {
+                "TN": 1892,
+                "FP": 20,
+                "FN": 125,
+                "TP": 52
+            }
+        },
+        "Updated_System": {
+            "Accuracy": 0.9913,
+            "Precision": 0.9119,
+            "Recall": 0.9944,
+            "F1": 0.9514,
+            "PA_Precision": 0.9124,
+            "PA_Recall": 1.0,
+            "PA_F1": 0.9542,
+            "ROC_AUC": 0.9998,
+            "Confusion_Matrix": {
+                "TN": 1884,
+                "FP": 17,
+                "FN": 1,
+                "TP": 176
+            },
+            "PA_Confusion_Matrix": {
+                "TN": 1884,
+                "FP": 17,
+                "FN": 0,
+                "TP": 177
+            }
+        }
+    },
+    "Test_Dataset": {
+        "Previous_System": {
+            "Accuracy": 0.808,
+            "Precision": 0.2202,
+            "Recall": 0.1499,
+            "F1": 0.1784,
+            "PA_Precision": 0.3775,
+            "PA_Recall": 0.3219,
+            "PA_F1": 0.3475,
+            "ROC_AUC": 0.507,
+            "Confusion_Matrix": {
+                "TN": 1455,
+                "FP": 216,
+                "FN": 346,
+                "TP": 61
+            },
+            "PA_Confusion_Matrix": {
+                "TN": 1455,
+                "FP": 216,
+                "FN": 276,
+                "TP": 131
+            }
+        },
+        "Updated_System": {
+            "Accuracy": 0.9293,
+            "Precision": 0.9422,
+            "Recall": 0.6806,
+            "F1": 0.7903,
+            "PA_Precision": 0.9567,
+            "PA_Recall": 0.9238,
+            "PA_F1": 0.94,
+            "ROC_AUC": 0.9107,
+            "Confusion_Matrix": {
+                "TN": 1654,
+                "FP": 17,
+                "FN": 130,
+                "TP": 277
+            },
+            "PA_Confusion_Matrix": {
+                "TN": 1654,
+                "FP": 17,
+                "FN": 31,
+                "TP": 376
+            }
+        }
+    }
+}

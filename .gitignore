@@ -1,0 +1,14 @@
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Model weights and scratch files
+*.pth
+*.pkl
+*.npy
+archive/
+
+# Data artifacts and scratch
+data/zones/

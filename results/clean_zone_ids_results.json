@@ -1,0 +1,66 @@
+{
+    "Global Model": {
+        "roc_auc": 0.9999,
+        "default_0.5": {
+            "f1": 0.9891,
+            "pa_f1": 0.9891,
+            "precision": 0.9783,
+            "recall": 1.0
+        },
+        "optimal_threshold": {
+            "threshold": 0.87,
+            "f1": 0.9926,
+            "pa_f1": 0.9945,
+            "precision": 0.989,
+            "recall": 0.9963
+        }
+    },
+    "Max Zone Adapter": {
+        "roc_auc": 0.9884,
+        "default_0.5": {
+            "f1": 0.3441,
+            "pa_f1": 0.3441,
+            "precision": 0.2078,
+            "recall": 1.0
+        },
+        "optimal_threshold": {
+            "threshold": 0.93,
+            "f1": 0.8723,
+            "pa_f1": 0.9202,
+            "precision": 0.8396,
+            "recall": 0.9077
+        }
+    },
+    "Mean Zone Adapter": {
+        "roc_auc": 0.9966,
+        "default_0.5": {
+            "f1": 0.9019,
+            "pa_f1": 0.9186,
+            "precision": 0.8452,
+            "recall": 0.9668
+        },
+        "optimal_threshold": {
+            "threshold": 0.57,
+            "f1": 0.9418,
+            "pa_f1": 0.9801,
+            "precision": 0.958,
+            "recall": 0.9262
+        }
+    },
+    "Fused Global+Zone": {
+        "roc_auc": 0.9997,
+        "default_0.5": {
+            "f1": 0.9644,
+            "pa_f1": 0.9644,
+            "precision": 0.9313,
+            "recall": 1.0
+        },
+        "optimal_threshold": {
+            "threshold": 0.71,
+            "f1": 0.9908,
+            "pa_f1": 0.9927,
+            "precision": 0.9854,
+            "recall": 0.9963
+        }
+    }
+}
