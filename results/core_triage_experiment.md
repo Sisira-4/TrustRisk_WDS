@@ -20,7 +20,7 @@
 | **Policy 2: Temporal Persistence Smoothing** | **7/7** | 7 | 0 | **3** (0.24/wk) | 25.0% | **0.0%** | 4.86 h |
 | **Policy 3: Confidence-Only Gating (PCS)** | **7/7** | 7 | 0 | **0** (0.0/wk) | 100.0% | **100.0%** | 6.57 h |
 | **Policy 4: Trust-Gated Triage (Full ATI)** | **7/7** | 6 | 0 | **0** (0.0/wk) | 100.0% | **100.0%** | 6.86 h |
-| **Policy 5: Trust + Risk Gate (ATI x TDCRI)** | **7/7** | 7 | 0 | **0** (0.0/wk) | 100.0% | **100.0%** | 6.86 h |
+| **Policy 5: Trust + Risk Gate (ATI x TDCRI)** | **7/7** | 7 | 0 | **0** (0.0/wk) | 100.0% | **100.0%** | 7.14 h |
 
 ---
 

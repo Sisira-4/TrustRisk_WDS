@@ -134,13 +134,16 @@ def main():
     # 1. Run Data Card (Phase 1)
     run_phase_script("experiments/data_card.py", "Phase 1 Data Card Verification")
     
-    # 2. Run Trust Calibration (Phase 3)
+    # 2. Run Frozen Detector Cross-Validation (Phase 2)
+    run_phase_script("experiments/v3_residual/run_cv.py", "Phase 2 Cross-Validation Residual Detector (alpha=10.0)")
+
+    # 3. Run Trust Calibration (Phase 3)
     run_phase_script("experiments/run_trust_calibration.py", "Phase 3 Trust Calibration & UQS/ERS Validation")
     
-    # 3. Run Hydraulic Risk Simulation (Phase 4)
+    # 4. Run Hydraulic Risk Simulation (Phase 4)
     run_phase_script("risk/hydraulic_simulation.py", "Phase 4 WNTR Hydraulic Consequence & TPPI Knapsack")
     
-    # 4. Run Core Alert Triage Experiment (Phase 5)
+    # 5. Run Core Alert Triage Experiment (Phase 5)
     run_phase_script("experiments/run_core_triage_experiment.py", "Phase 5 Core Alert Triage Experiment")
     
     # 5. Display All 5 Manuscript Tables

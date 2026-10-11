@@ -135,17 +135,35 @@ def main():
     p3_review = (alarm_per == 1) & (pcs < 0.85)
     res_p3 = evaluate_policy(p3_action, p3_review, y)
     
+    # Load physical risk assets and sensor mapping
+    MAPPING_PATH = ROOT / "network" / "mappings" / "batadal_epanet_mapping.csv"
+    risk_df = pd.read_csv(RISK_PATH)
+    mapping_df = pd.read_csv(MAPPING_PATH)
+    s2a = dict(zip(mapping_df["variable"], mapping_df["element"]))
+    a2r = dict(zip(risk_df["Asset_ID"], risk_df["Base_Risk"]))
+    
+    # Retrieve physical consequence / Base Risk for top anomalous sensors
+    r1 = np.array([a2r.get(s2a.get(s, ""), 0.20) for s in df["top1_sensor"]])
+    r2 = np.array([a2r.get(s2a.get(s, ""), 0.20) for s in df["top2_sensor"]])
+    r3 = np.array([a2r.get(s2a.get(s, ""), 0.20) for s in df["top3_sensor"]])
+    r_phys = np.maximum(r1, np.maximum(r2, r3))
+    tdcri = ts * r_phys
+
     # Policy 4: Full Trust-Gated Alert Triage (ATI Bands)
     # Persistence alarm + TS >= 0.80 -> Action; TS in [0.50, 0.80) -> Review; TS < 0.50 -> Suppress
     p4_action = (alarm_per == 1) & (ts >= 0.80)
     p4_review = (alarm_per == 1) & (ts >= 0.50) & (ts < 0.80)
     res_p4 = evaluate_policy(p4_action, p4_review, y)
     
-    # Policy 5: Trust + Physical Risk Integrated Triage (TDCRI)
-    # Dynamic risk modulation: TS weighted by physical consequence
-    # Alarms on high-risk physical assets or high trust reach Action;
-    # Lower trust or moderate risk are managed in Review queue.
-    p5_action = (alarm_per == 1) & ((ts >= 0.82) | ((ts >= 0.75) & (p_attack >= 0.80)))
+    # Policy 5: Trust + Physical Risk Integrated Triage (ATI x TDCRI Gate)
+    # Physically-grounded risk modulation: Alarms on high-risk physical assets (Base Risk >= 0.55,
+    # e.g. primary pumps PU2, valves v1, tanks T1/T2/T4) escalate with validated trust (TS >= 0.75).
+    # Moderately critical assets (Base Risk >= 0.35) require high trust (TS >= 0.80).
+    # Low-risk or uncorroborated alarms remain in the Human Review queue.
+    p5_action = (alarm_per == 1) & (
+        ((ts >= 0.80) & (r_phys >= 0.35)) |
+        ((ts >= 0.75) & (r_phys >= 0.55))
+    )
     p5_review = (alarm_per == 1) & ~p5_action & (ts >= 0.50)
     res_p5 = evaluate_policy(p5_action, p5_review, y)
     
