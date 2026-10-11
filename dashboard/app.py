@@ -15,6 +15,8 @@ TRIAGE_PATH = ROOT / "results" / "core_triage_experiment.json"
 GRAPH_PATH = ROOT / "network" / "graph" / "ctown_graph.pkl"
 MAPPING_PATH = ROOT / "network" / "mappings" / "batadal_epanet_mapping.csv"
 
+INP_PATH = ROOT / "network" / "epanet" / "CTOWN.INP"
+
 st.set_page_config(page_title="TrustRisk-WDS Dashboard", layout="wide", page_icon="🛡️")
 
 # Custom CSS for Dark Modern Theme
@@ -35,6 +37,13 @@ st.markdown("""
 
 @st.cache_data
 def load_data():
+    if not CLEAN_PIPE_PATH.exists():
+        raise FileNotFoundError(f"Clean pipeline file not found at {CLEAN_PIPE_PATH}. Run 'python reproduce_all.py' first.")
+    if not RISK_REPORT_PATH.exists():
+        raise FileNotFoundError(f"Risk report file not found at {RISK_REPORT_PATH}. Run 'python risk/hydraulic_simulation.py' first.")
+    if not TRIAGE_PATH.exists():
+        raise FileNotFoundError(f"Core triage results not found at {TRIAGE_PATH}. Run 'python experiments/run_core_triage_experiment.py' first.")
+
     df_pipe = pd.read_csv(CLEAN_PIPE_PATH)
     df_risk = pd.read_csv(RISK_REPORT_PATH)
     with open(TRIAGE_PATH, "r") as f:
@@ -48,8 +57,12 @@ def load_graph():
     if GRAPH_PATH.exists():
         with open(GRAPH_PATH, "rb") as f:
             G = pickle.load(f)
+    elif INP_PATH.exists():
+        import wntr
+        wn = wntr.network.WaterNetworkModel(str(INP_PATH))
+        G = wn.to_graph().to_undirected()
     else:
-        G = nx.erdos_renyi_graph(50, 0.1, seed=42)
+        raise FileNotFoundError(f"Neither {GRAPH_PATH} nor {INP_PATH} was found. Cannot load physical water topology.")
     return G
 
 

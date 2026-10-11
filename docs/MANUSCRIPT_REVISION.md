@@ -52,9 +52,10 @@ To ensure absolute methodological integrity, all evaluations strictly observe th
 | **Test (BATADAL Test Labeled)** | 2,089 | 1,682 | 0 | 407 | 7 | 0 |
 
 ### Label Semantics & Quarantine Rules
-1. **Unlabelled Data Semantics (`-999`)**: Dataset 04 contains 3,958 rows marked with `-999`. Following faculty review mandates, these rows are treated as **unlabelled** rather than confirmed normal. Alarms occurring during `-999` intervals are classified as *unexplained alarms* rather than assumed false alarms.
-2. **Transition Buffer Masking ($\pm 48\text{h}$)**: A 48-hour buffer before and after each attack event in Dataset 04 is masked during cross-validation threshold pooling to prevent transient hydraulic stabilization from contaminating normal baseline statistics.
-3. **Quarantined Single-Shot Test Set**: The official test set (`BATADAL_test_dataset_labeled.csv`) was accessed strictly once after committing `frozen_config.json`. A physical rerun blocker guard prevents multiple test sweeps.
+1. **Provisional Normal Training Pool**: Unlabelled rows (`-999`) in Dataset 04 situated $> 48\text{h}$ from any labelled attack are used as a provisional normal training pool for residual regression fitting.
+2. **Evaluation Semantics (Never Confirmed Negatives)**: `-999` rows are strictly treated as **unlabelled** in all evaluation protocols. Any alarms occurring during `-999` periods in Dataset 04 are termed *'unexplained alarms'* (or estimated false alarms), acknowledging unlabelled operational disturbances.
+3. **Transition Buffer Masking ($\pm 48\text{h}$)**: A strict 48-hour buffer before and after each attack event in Dataset 04 is masked during cross-validation threshold pooling to prevent transient hydraulic stabilization from contaminating normal baseline statistics.
+4. **Quarantined Single-Shot Test Set**: The official test set (`BATADAL_test_dataset_labeled.csv`) was accessed strictly once after committing `frozen_config.json`. A physical rerun blocker guard prevents multiple test sweeps.
 
 ---
 
@@ -62,7 +63,7 @@ To ensure absolute methodological integrity, all evaluations strictly observe th
 
 The foundational detection layer uses a multi-sensor Ridge regression residual model ($\alpha = 10.0$). For each of the 43 monitored hydraulic sensors (tank levels, junction pressures, pump flow rates), an independent regressor predicts the expected physical state based on network-wide telemetry. Sensor residuals are standardized into z-scores, aggregated across the top-3 anomalies ($n_{\text{top}}=3$), and smoothed via a 3-of-6 temporal persistence window.
 
-The detection threshold ($7.4532$) was derived strictly from the 99th percentile of the margin-free validation pool in Dataset 03 and frozen in `frozen_config.json`.
+The detection threshold ($7.4532$) was derived strictly from the 99th percentile of the margin-free pool in Dataset 04 and frozen in `frozen_config.json`.
 
 ### Table 2: Frozen Residual Detector Test Evaluation (Pointwise vs. Point-Adjusted)
 *(Evaluated once via `experiments/v3_residual/run_test_once.py`, recorded in `results/v3/test_report.json`)*

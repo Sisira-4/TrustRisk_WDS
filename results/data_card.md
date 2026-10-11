@@ -8,8 +8,7 @@ Summary of dataset splits, label semantics, and masking protocol:
 | Cross-Validation (BATADAL Dataset 04) |                 4177 |                      0 |                3958 |                219 |               5 |                    480 |
 | Test (BATADAL Test Labeled)           |                 2089 |                   1682 |                   0 |                407 |               7 |                      0 |
 
-### Label Semantics & Masking Rules:
-- `0`: Confirmed normal operational period.
-- `-999`: **Unlabelled** data (NOT confirmed normal). In cross-validation, alarms in -999 are termed 'unexplained alarms'.
-- `1`: Ground-truth cyber-physical attack.
-- `±48h Margins`: Temporal buffer surrounding each attack event in Dataset 04 to prevent transitional contamination.
+### Label Semantics & Masking Policy:
+1. **Provisional Normal Training Pool**: Unlabelled rows (`-999`) in Dataset 04 situated > 48h from any attack are used as a provisional normal training pool for residual regression fitting.
+2. **Evaluation Semantics (Never Confirmed Negatives)**: `-999` rows are strictly treated as **unlabelled** in all evaluation protocols. Any alarms occurring during `-999` periods are termed *'unexplained alarms'* (or estimated false alarms), acknowledging unlabelled operational disturbances.
+3. **Transition Masking (±48h Buffer)**: A strict 48-hour buffer before and after each labelled attack in Dataset 04 is masked (`MARGIN_MASK = 1`) to eliminate transitional hydraulic recovery periods from both training and evaluation.

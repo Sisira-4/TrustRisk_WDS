@@ -75,11 +75,10 @@ def main():
     md_content = "# TrustRisk-WDS Benchmark Data Card\n\n"
     md_content += "Summary of dataset splits, label semantics, and masking protocol:\n\n"
     md_content += card_df.to_markdown(index=False)
-    md_content += "\n\n### Label Semantics & Masking Rules:\n"
-    md_content += "- `0`: Confirmed normal operational period.\n"
-    md_content += "- `-999`: **Unlabelled** data (NOT confirmed normal). In cross-validation, alarms in -999 are termed 'unexplained alarms'.\n"
-    md_content += "- `1`: Ground-truth cyber-physical attack.\n"
-    md_content += "- `±48h Margins`: Temporal buffer surrounding each attack event in Dataset 04 to prevent transitional contamination.\n"
+    md_content += "\n\n### Label Semantics & Masking Policy:\n"
+    md_content += "1. **Provisional Normal Training Pool**: Unlabelled rows (`-999`) in Dataset 04 situated > 48h from any attack are used as a provisional normal training pool for residual regression fitting.\n"
+    md_content += "2. **Evaluation Semantics (Never Confirmed Negatives)**: `-999` rows are strictly treated as **unlabelled** in all evaluation protocols. Any alarms occurring during `-999` periods are termed *'unexplained alarms'* (or estimated false alarms), acknowledging unlabelled operational disturbances.\n"
+    md_content += "3. **Transition Masking (±48h Buffer)**: A strict 48-hour buffer before and after each labelled attack in Dataset 04 is masked (`MARGIN_MASK = 1`) to eliminate transitional hydraulic recovery periods from both training and evaluation.\n"
 
     out_file = OUT_DIR / "data_card.md"
     out_file.write_text(md_content, encoding="utf-8")
