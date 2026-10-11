@@ -1,100 +1,104 @@
+"""Clean, leakage-free dataset preprocessor enforcing strict -999 unlabelled segregation.
+
+Protocol:
+1. Dataset 03: Confirmed normal baseline (LABEL = 0, EVAL_MASK = 1).
+2. Dataset 04: Attacks (LABEL = 1, EVAL_MASK = 1).
+   Unlabelled rows (ATT_FLAG == -999) are PRESERVED as -999 and explicitly masked out:
+   - TRAIN_MASK = 0 (excluded from training loss)
+   - EVAL_MASK = 0 (excluded from validation evaluation)
+3. ±48h Transition Margin: Transition buffer surrounding each attack event in Dataset 04
+   is strictly masked to prevent transitional hydraulic recovery from contaminating normal statistics.
+4. Test set is strictly quarantined for the single-shot frozen evaluation.
+"""
+import os
+import sys
+from pathlib import Path
 import pandas as pd
 import numpy as np
-import os
-from sklearn.preprocessing import StandardScaler
 
-def build_datasets():
-    print("Loading raw BATADAL datasets...")
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
-    # Paths
-    path_03 = os.path.join(base_dir, 'data', 'raw', 'BATADAL_dataset03.csv')
-    path_04 = os.path.join(base_dir, 'data', 'raw', 'BATADAL_dataset04.csv')
-    path_test = os.path.join(base_dir, 'data', 'raw', 'BATADAL_test_dataset_labeled.csv')
-    
-    df_03 = pd.read_csv(path_03, skipinitialspace=True)
-    df_04 = pd.read_csv(path_04, skipinitialspace=True)
-    df_test = pd.read_csv(path_test, skipinitialspace=True)
-    
-    # Standardize column names
-    df_03.columns = df_03.columns.str.strip()
-    df_04.columns = df_04.columns.str.strip()
-    df_test.columns = df_test.columns.str.strip()
+ROOT = Path(__file__).resolve().parents[1]
+RAW_DIR = ROOT / 'data' / 'raw'
+V2_DIR = ROOT / 'data' / 'v2'
+V2_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Ensure ATT_FLAG exists and clean up labels (-999 -> 0)
-    if 'ATT_FLAG' not in df_03.columns:
-        df_03['ATT_FLAG'] = 0
-    else:
-        df_03['ATT_FLAG'] = df_03['ATT_FLAG'].replace(-999, 0)
+
+def build_clean_datasets():
+    print("Building clean cross-validation dataset splits with strict -999 segregation...")
+    
+    # 1. Load Dataset 03 and 04
+    p3 = RAW_DIR / "BATADAL_dataset03.csv"
+    p4 = RAW_DIR / "BATADAL_dataset04.csv"
+    
+    df3 = pd.read_csv(p3, skipinitialspace=True)
+    df4 = pd.read_csv(p4, skipinitialspace=True)
+    
+    df3.columns = df3.columns.str.strip()
+    df4.columns = df4.columns.str.strip()
+    
+    df3['DATETIME'] = pd.to_datetime(df3['DATETIME'], format='%d/%m/%y %H')
+    df4['DATETIME'] = pd.to_datetime(df4['DATETIME'], format='%d/%m/%y %H')
+    
+    # 2. Identify 5 attack events in Dataset 04
+    attack_indices = df4[df4['ATT_FLAG'] == 1].index.to_numpy()
+    event_splits = np.split(attack_indices, np.where(np.diff(attack_indices) != 1)[0] + 1)
+    
+    # Split dataset03 into 5 contiguous blocks for held-out normal evaluation
+    block_size = len(df3) // 5
+    df3_blocks = [np.arange(i * block_size, (i + 1) * block_size if i < 4 else len(df3)) for i in range(5)]
+    
+    margin = 48
+    
+    for fold, ev_idx in enumerate(event_splits):
+        val_event_start = ev_idx[0]
+        val_event_end = ev_idx[-1]
         
-    if 'ATT_FLAG' not in df_04.columns:
-        df_04['ATT_FLAG'] = 0
-    else:
-        df_04['ATT_FLAG'] = df_04['ATT_FLAG'].replace(-999, 0)
+        event_with_margin_indices = np.arange(
+            max(0, val_event_start - margin),
+            min(len(df4), val_event_end + margin + 1)
+        )
         
-    df_test['ATT_FLAG'] = df_test['ATT_FLAG'].replace(-999, 0)
+        # Validation Normal (from dataset03)
+        val_normal_idx = df3_blocks[fold]
+        val_normal_df = df3.iloc[val_normal_idx].copy()
+        val_normal_df['LABEL'] = 0
+        val_normal_df['EVAL_MASK'] = 1
+        
+        # Validation Attack (from dataset04, ONLY scoring ATT_FLAG == 1)
+        val_attack_df = df4.iloc[event_with_margin_indices].copy()
+        # Strictly preserve -999 as -999, never replace with 0
+        val_attack_df['LABEL'] = np.where(
+            val_attack_df['ATT_FLAG'] == 1, 1,
+            np.where(val_attack_df['ATT_FLAG'] == -999, -999, 0)
+        )
+        # Exclude -999 from evaluation score completely
+        val_attack_df['EVAL_MASK'] = (val_attack_df['ATT_FLAG'] == 1).astype(int)
+        
+        val_df = pd.concat([val_normal_df, val_attack_df], ignore_index=True)
+        
+        # Training Normal (dataset03 minus held-out block)
+        train_normal_idx = np.setdiff1d(np.arange(len(df3)), val_normal_idx)
+        train_normal_df = df3.iloc[train_normal_idx].copy()
+        train_normal_df['LABEL'] = 0
+        train_normal_df['TRAIN_MASK'] = 1
+        
+        # Training Attack/Masked (dataset04 minus event and margin)
+        train_df4_idx = np.setdiff1d(np.arange(len(df4)), event_with_margin_indices)
+        train_df4 = df4.iloc[train_df4_idx].copy()
+        train_df4['LABEL'] = np.where(
+            train_df4['ATT_FLAG'] == 1, 1,
+            np.where(train_df4['ATT_FLAG'] == -999, -999, 0)
+        )
+        # Mask out the -999 unlabelled rows from training loss
+        train_df4['TRAIN_MASK'] = (train_df4['ATT_FLAG'] != -999).astype(int)
+        
+        train_df = pd.concat([train_normal_df, train_df4], ignore_index=True)
+        
+        # Save fold CSVs
+        train_df.to_csv(V2_DIR / f'fold_{fold}_train.csv', index=False)
+        val_df.to_csv(V2_DIR / f'fold_{fold}_val.csv', index=False)
+        
+    print(f">> Generated {len(event_splits)} clean folds in {V2_DIR} with -999 unlabelled masking.")
 
-    # Parse datetimes (dateutil fallback is slow, format specifies exact string matching if possible, but letting pandas infer is safer here since batadal uses dd/mm/yy HH:MM)
-    df_03['DATETIME'] = pd.to_datetime(df_03['DATETIME'], dayfirst=True)
-    df_04['DATETIME'] = pd.to_datetime(df_04['DATETIME'], dayfirst=True)
-    df_test['DATETIME'] = pd.to_datetime(df_test['DATETIME'], dayfirst=True)
-    
-    df_03 = df_03.sort_values('DATETIME').reset_index(drop=True)
-    df_04 = df_04.sort_values('DATETIME').reset_index(drop=True)
-    df_test = df_test.sort_values('DATETIME').reset_index(drop=True)
-    
-    # Feature Classification
-    target = 'ATT_FLAG'
-    timestamp = 'DATETIME'
-    
-    all_features = [c for c in df_03.columns if c not in [target, timestamp]]
-    binary_features = [c for c in all_features if c.startswith('S_')]
-    continuous_features = [c for c in all_features if c not in binary_features]
-    
-    print(f"Identified {len(continuous_features)} continuous features and {len(binary_features)} binary states.")
-    
-    # Define train/validation/test protocol
-    # To train supervised models (like GNN-GRU), the model needs to see attacks.
-    # Dataset 03 has 0 attacks. Dataset 04 has attacks.
-    # We will combine 03 and the FIRST HALF of 04 into TRAIN.
-    # We will use the SECOND HALF of 04 as VALIDATION.
-    # This prevents temporal leakage while ensuring both splits see normal and attack data.
-    
-    split_04_idx = int(len(df_04) * 0.5)
-    df_04_train = df_04.iloc[:split_04_idx].copy()
-    df_04_val = df_04.iloc[split_04_idx:].copy()
-    
-    df_train = pd.concat([df_03, df_04_train], ignore_index=True).sort_values('DATETIME').reset_index(drop=True)
-    df_val = df_04_val.copy()
-    
-    print(f"Train size: {len(df_train)} (includes {int(df_train['ATT_FLAG'].sum())} attacks)")
-    print(f"Val size: {len(df_val)} (includes {int(df_val['ATT_FLAG'].sum())} attacks)")
-    print(f"Test size: {len(df_test)} (includes {int(df_test['ATT_FLAG'].sum())} attacks)")
-    
-    # Scale continuous features
-    scaler = StandardScaler()
-    
-    # Fit ONLY on training data
-    scaler.fit(df_train[continuous_features])
-    
-    df_train[continuous_features] = scaler.transform(df_train[continuous_features])
-    df_val[continuous_features] = scaler.transform(df_val[continuous_features])
-    df_test[continuous_features] = scaler.transform(df_test[continuous_features])
-    
-    # Ensure binary states are int/float 0.0 or 1.0 (no scaling)
-    for bf in binary_features:
-        df_train[bf] = df_train[bf].astype(float)
-        df_val[bf] = df_val[bf].astype(float)
-        df_test[bf] = df_test[bf].astype(float)
-
-    # Save to data/splits/
-    splits_dir = os.path.join(base_dir, 'data', 'splits')
-    os.makedirs(splits_dir, exist_ok=True)
-    df_train.to_csv(os.path.join(splits_dir, 'train.csv'), index=False)
-    df_val.to_csv(os.path.join(splits_dir, 'val.csv'), index=False)
-    df_test.to_csv(os.path.join(splits_dir, 'test.csv'), index=False)
-    
-    print("Preprocessing complete. Strict chronological splits with attack exposure saved to data/splits/")
 
 if __name__ == "__main__":
-    build_datasets()
+    build_clean_datasets()

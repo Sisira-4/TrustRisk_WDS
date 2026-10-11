@@ -74,3 +74,14 @@ def test_data_card_consistency():
     assert "2089" in content, "Test set row count missing"
     assert "-999" in content and "Unlabelled" in content
 
+
+def test_preprocessing_never_maps_negative_999_to_zero():
+    """Verify that preprocessing/build_dataset.py never maps -999 to 0."""
+    root = os.path.dirname(os.path.dirname(__file__))
+    preproc_file = os.path.join(root, 'preprocessing', 'build_dataset.py')
+    with open(preproc_file, 'r', encoding='utf-8') as f:
+        txt = f.read()
+    assert ".replace(-999, 0)" not in txt, "build_dataset.py must never replace -999 with 0"
+    assert "TRAIN_MASK" in txt and "EVAL_MASK" in txt, "build_dataset.py must enforce TRAIN_MASK and EVAL_MASK"
+
+
