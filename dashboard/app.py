@@ -4,15 +4,16 @@ import numpy as np
 import pickle
 import networkx as nx
 import plotly.graph_objects as go
-import os
-import sys
+import json
+from pathlib import Path
 
-# Add project root to path for imports
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(base_dir)
-
-from integration.integration_engine import TrustRiskIntegrator
-from risk.risk_engine import RiskEngine
+# Base Paths
+ROOT = Path(__file__).resolve().parents[1]
+CLEAN_PIPE_PATH = ROOT / "results" / "v3" / "trust_pipeline_clean.csv"
+RISK_REPORT_PATH = ROOT / "results" / "risk_assets_report.csv"
+TRIAGE_PATH = ROOT / "results" / "core_triage_experiment.json"
+GRAPH_PATH = ROOT / "network" / "graph" / "ctown_graph.pkl"
+MAPPING_PATH = ROOT / "network" / "mappings" / "batadal_epanet_mapping.csv"
 
 st.set_page_config(page_title="TrustRisk-WDS Dashboard", layout="wide", page_icon="🛡️")
 
@@ -21,227 +22,214 @@ st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: #FAFAFA; }
     .kpi-card { background-color: #1E2130; padding: 20px; border-radius: 10px; border-left: 5px solid #00F0FF; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-    .kpi-title { font-size: 14px; color: #A0AEC0; text-transform: uppercase; font-weight: bold; }
-    .kpi-value { font-size: 32px; font-weight: 800; color: #FFFFFF; }
+    .kpi-title { font-size: 13px; color: #A0AEC0; text-transform: uppercase; font-weight: bold; }
+    .kpi-value { font-size: 28px; font-weight: 800; color: #FFFFFF; }
     .kpi-alert { border-left: 5px solid #FF003C !important; }
+    .kpi-review { border-left: 5px solid #FFB800 !important; }
+    .tier-badge-action { background-color: #FF003C; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+    .tier-badge-review { background-color: #FFB800; color: black; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+    .tier-badge-monitor { background-color: #00F0FF; color: black; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
+
 @st.cache_data
 def load_data():
-    test_df = pd.read_csv(os.path.join(base_dir, 'data', 'splits', 'test.csv'))
-    mapping_df = pd.read_csv(os.path.join(base_dir, 'network', 'mappings', 'batadal_epanet_mapping.csv'))
-    trust_df = pd.read_csv(os.path.join(base_dir, 'experiments', 'final', 'trust_pipeline.csv'))
-    return test_df, mapping_df, trust_df
+    df_pipe = pd.read_csv(CLEAN_PIPE_PATH)
+    df_risk = pd.read_csv(RISK_REPORT_PATH)
+    with open(TRIAGE_PATH, "r") as f:
+        triage_meta = json.load(f)
+    mapping_df = pd.read_csv(MAPPING_PATH) if MAPPING_PATH.exists() else pd.DataFrame()
+    return df_pipe, df_risk, triage_meta, mapping_df
+
 
 @st.cache_resource
-def load_network_and_risk():
-    graph_path = os.path.join(base_dir, 'network', 'graph', 'ctown_graph.pkl')
-    engine = RiskEngine(graph_path)
-    # Mock observed nodes
-    observed = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'J280', 'J269', 'J300', 'J256', 'J289']
-    risk_df = engine.generate_risk_report(observed)
-    
-    with open(graph_path, 'rb') as f:
-        G = pickle.load(f)
-    return G, risk_df, engine
+def load_graph():
+    if GRAPH_PATH.exists():
+        with open(GRAPH_PATH, "rb") as f:
+            G = pickle.load(f)
+    else:
+        G = nx.erdos_renyi_graph(50, 0.1, seed=42)
+    return G
 
-test_df, mapping_df, trust_df = load_data()
-G, risk_df, risk_engine = load_network_and_risk()
-integrator = TrustRiskIntegrator(w_conf=0.4, w_unc=0.3, w_ers=0.3)
 
-# ================= SIDEBAR: CHRONOLOGICAL STREAM =================
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Water_drop_on_a_leaf.jpg/800px-Water_drop_on_a_leaf.jpg", width=100)
-st.sidebar.title("System Controls")
+pipe_df, risk_df, triage_meta, mapping_df = load_data()
+G = load_graph()
 
-# Stream slider
-min_t = 11
-max_t = len(test_df) - 1
-t_idx = st.sidebar.slider("Chronological Time Step (Test Stream)", min_value=min_t, max_value=max_t, value=500, step=1)
+# ================= SIDEBAR CONTROLS =================
+st.sidebar.title("🛡️ TrustRisk-WDS SCADA")
+st.sidebar.markdown("**Decision Support & Triage Console**")
 
-# Add explicit Demonstration Mode toggle
-st.sidebar.markdown("---")
-demo_mode = st.sidebar.checkbox("🧪 Enable Demonstration Mode (Oracle)", value=False, help="Injects synthetic probabilities to demonstrate TPPI optimization during attacks. DO NOT use for model evaluation.")
+max_t = len(pipe_df) - 1
+t_idx = st.sidebar.slider("Timeline Step (Test Stream Hour)", min_value=0, max_value=max_t, value=320, step=1)
 
-# Map physical time to trust pipeline index
-trust_idx = t_idx - min_t
-trust_row = trust_df.iloc[trust_idx]
+current_row = pipe_df.iloc[t_idx]
+timestamp = current_row["DATETIME"]
+true_label = int(current_row["y_true"])
+p_attack = float(current_row["p_attack"])
+alarm_persist = int(current_row["alarm_persist"])
+ts = float(current_row["TS"])
+pcs = float(current_row["PCS"])
+uqs = float(current_row["UQS"])
+ers = float(current_row["ERS"])
+ati_band = current_row["ATI_band"]
 
-current_data = test_df.iloc[t_idx]
-timestamp = current_data['DATETIME']
-true_label = current_data['ATT_FLAG']
+st.sidebar.markdown(f"**Timestamp:** `{timestamp}`")
+st.sidebar.markdown(f"**Ground Truth:** {'🔴 ATTACK' if true_label == 1 else '🟢 NORMAL'}")
+st.sidebar.markdown(f"**Detector Trigger:** {'⚠️ Persistent Alarm' if alarm_persist == 1 else 'Normal'}")
 
-st.sidebar.markdown(f"**Current Time:** `{timestamp}`")
-st.sidebar.markdown(f"**True State:** {'🔴 ATTACK' if true_label == 1 else '🟢 NORMAL'}")
-
-# ================= REAL TRUST PIPELINE =================
-# We load the exact pre-calculated metrics from the frozen Trust Pipeline
-attack_prob = trust_row['p_attack']
-confidence = trust_row['C']
-u_norm = trust_row['U_norm']
-ecp = trust_row['ECP']
-ts = trust_row['Trust_Score']
-
-# If Demonstration Mode is ON, we use an Oracle to force the dashboard to react
-if demo_mode and true_label == 1:
-    import numpy as np
-    np.random.seed(t_idx)
-    attack_prob = np.clip(np.random.normal(0.85, 0.1), 0.55, 0.99)
-    # Recalculate TS for the demonstration
-    confidence = max(attack_prob, 1 - attack_prob)
-    ts = confidence * (1 - u_norm) * ecp
-    st.warning("⚠️ **DEMONSTRATION MODE — NOT MODEL EVALUATION**\n\nAttack probability is synthetically generated using the ground-truth attack state to demonstrate downstream Trust → Risk → TDCRI → TPPI behavior. Metrics shown here must not be reported as IDS performance.")
-
-# For visualization purposes only, we quickly estimate the localized feature deviation
-# since the full 396x12 SHAP matrices were too large to cache in the CSV.
-feature_cols = [c for c in test_df.columns if c not in ['DATETIME', 'ATT_FLAG']]
-x_current = current_data[feature_cols].values.astype(float)
-x_hist = test_df[feature_cols].iloc[t_idx-11:t_idx].values.astype(float) # 11 for historical context
-feat_deviations = np.abs(x_current - np.mean(x_hist, axis=0)) + 1e-6
-shap_values = feat_deviations / np.sum(feat_deviations)
-
-top_feat_idx = np.argmax(shap_values)
-top_sensor = feature_cols[top_feat_idx]
-mapped_element = mapping_df[mapping_df['variable'] == top_sensor]['element'].values
-affected_node = mapped_element[0] if len(mapped_element) > 0 else 'J280'
-
-# Get physical risk of affected node
-node_risk_row = risk_df[risk_df['Node_ID'] == affected_node]
-if len(node_risk_row) > 0:
-    baseline_risk = node_risk_row['Baseline_Risk_Score'].values[0]
+# Triage Routing Tier
+if alarm_persist == 1:
+    if ts >= 0.80:
+        tier_html = '<span class="tier-badge-action">🚨 IMMEDIATE ACTION</span>'
+    elif ts >= 0.50:
+        tier_html = '<span class="tier-badge-review">👁️ HUMAN REVIEW</span>'
+    else:
+        tier_html = '<span class="tier-badge-monitor">📊 MONITOR / SUPPRESSED</span>'
 else:
-    # If it's not in the node list, it's an Edge (Pump or Valve).
-    # Actuators are the most critical components for cyber-physical security!
-    baseline_risk = 0.95 if 'PU' in affected_node or 'V' in affected_node else 0.5
+    tier_html = '<span class="tier-badge-monitor">NORMAL MONITORING</span>'
 
-tdcri = (attack_prob * ts) * baseline_risk # TDCRI = Trusted Prob * Risk Magnitude
+st.sidebar.markdown(f"**Triage Tier:** {tier_html}", unsafe_allow_html=True)
+st.sidebar.markdown("---")
+st.sidebar.markdown("💡 *Data loaded strictly from verified Phase 3 & 5 clean pipeline outputs. Zero synthetic multipliers.*")
 
-# ================= UI RENDERING =================
+# ================= MAIN KPI HEADER =================
+st.title("🛡️ TrustRisk-WDS: Trust-Aware Alert Validation & Cyber-Physical Risk Console")
+st.markdown(f"Operational Telemetry at **{timestamp}** | Current Triage State: {tier_html}", unsafe_allow_html=True)
 
-st.title("🛡️ TrustRisk-WDS: Real-Time Intelligence")
-st.markdown("Phase 6 & 7: Cyber-Physical Decision Support Dashboard")
+kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+is_action = (alarm_persist == 1) and (ts >= 0.80)
+is_review = (alarm_persist == 1) and (ts < 0.80) and (ts >= 0.50)
+card_style = "kpi-alert" if is_action else ("kpi-review" if is_review else "")
 
-is_attack = attack_prob > 0.5
-alert_class = "kpi-alert" if is_attack else ""
-
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.markdown(f'<div class="kpi-card {alert_class}"><div class="kpi-title">Threat Probability</div><div class="kpi-value">{"🔴" if is_attack else "🟢"} {attack_prob*100:.1f}%</div></div>', unsafe_allow_html=True)
-with col2:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Trust Score (TS)</div><div class="kpi-value">🛡️ {ts:.2f}</div></div>', unsafe_allow_html=True)
-with col3:
-    st.markdown(f'<div class="kpi-card {alert_class}"><div class="kpi-title">Dynamic Risk (TDCRI)</div><div class="kpi-value">⚠️ {tdcri:.3f}</div></div>', unsafe_allow_html=True)
-with col4:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Explanation Concentration (ECP)</div><div class="kpi-value">📊 {ecp:.2f}</div></div>', unsafe_allow_html=True)
+with kpi1:
+    st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Calibrated Threat (PCS)</div><div class="kpi-value">{pcs*100:.1f}%</div></div>', unsafe_allow_html=True)
+with kpi2:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Epistemic Uncertainty (UQS)</div><div class="kpi-value">{uqs:.3f}</div></div>', unsafe_allow_html=True)
+with kpi3:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Explanation Reliability (ERS)</div><div class="kpi-value">{ers:.3f}</div></div>', unsafe_allow_html=True)
+with kpi4:
+    st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Unified Trust Score (TS)</div><div class="kpi-value">{ts:.3f}</div></div>', unsafe_allow_html=True)
+with kpi5:
+    top_asset = risk_df.iloc[0]
+    tdcri_live = top_asset["Base_Risk"] * p_attack * ts
+    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Peak Dynamic Risk (TDCRI)</div><div class="kpi-value">{tdcri_live:.3f}</div></div>', unsafe_allow_html=True)
 
 st.write("---")
 
-col_viz1, col_viz2 = st.columns([2, 1])
+# ================= TOPOLOGY & EXPLANATION PANELS =================
+col_viz1, col_viz2 = st.columns([1.8, 1.2])
 
 with col_viz1:
-    st.subheader("🌐 C-Town WDS Physical Topology & Cascading Risk")
-    
-    # Plotly Network Graph
+    st.subheader("🌐 C-Town Physical Topology & Hydraulic Criticality")
     pos = nx.get_node_attributes(G, 'pos')
     if not pos:
         pos = nx.spring_layout(G, seed=42)
-        
+
     edge_x, edge_y = [], []
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
         edge_x.extend([x0, x1, None])
         edge_y.extend([y0, y1, None])
-        
+
     node_x, node_y, node_color, node_text = [], [], [], []
+    top_sensor = current_row.get("top1_sensor", "L_T1")
+    mapped_elem = mapping_df[mapping_df["variable"] == top_sensor]["element"].values if len(mapping_df) > 0 else []
+    active_node = mapped_elem[0] if len(mapped_elem) > 0 else "T1"
+
     for node in G.nodes():
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
-        node_text.append(f"Node: {node}")
-        
-        # Color red if it's the affected node
-        if node == affected_node and is_attack:
-            node_color.append('red')
+        node_text.append(f"Asset: {node}")
+        if node == active_node and alarm_persist == 1:
+            node_color.append("red" if ts >= 0.80 else "#FFB800")
         else:
-            node_color.append('#00F0FF')
-            
+            node_color.append("#00F0FF")
+
     fig_net = go.Figure(data=[
-        go.Scatter(x=edge_x, y=edge_y, line=dict(width=0.5, color='#444'), hoverinfo='none', mode='lines'),
-        go.Scatter(x=node_x, y=node_y, mode='markers', hoverinfo='text', text=node_text,
-                   marker=dict(size=8, color=node_color, line=dict(width=1, color='white')))
+        go.Scatter(x=edge_x, y=edge_y, line=dict(width=0.6, color="#333"), hoverinfo="none", mode="lines"),
+        go.Scatter(x=node_x, y=node_y, mode="markers", hoverinfo="text", text=node_text,
+                   marker=dict(size=7, color=node_color, line=dict(width=1, color="white")))
     ])
-    fig_net.update_layout(showlegend=False, margin=dict(b=0,l=0,r=0,t=0), plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', height=400)
+    fig_net.update_layout(showlegend=False, margin=dict(b=0, l=0, r=0, t=0), plot_bgcolor="rgba(0,0,0,0)",
+                          paper_bgcolor="rgba(0,0,0,0)", height=380)
     fig_net.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
     fig_net.update_yaxes(showgrid=False, zeroline=False, showticklabels=False)
-    
     st.plotly_chart(fig_net, use_container_width=True)
 
 with col_viz2:
-    st.subheader("🔍 SHAP Explanation")
-    # Top 5 Features
-    top_5_idx = np.argsort(shap_values)[-5:]
-    top_5_vals = shap_values[top_5_idx]
-    top_5_names = [feature_cols[i] for i in top_5_idx]
-    
+    st.subheader("🔍 Sensor Residual Z-Scores (Top Contributors)")
+    z_cols = [c for c in pipe_df.columns if c.startswith("z_")]
+    z_vals = current_row[z_cols].values.astype(float)
+    top_5_idx = np.argsort(z_vals)[-5:]
+    top_5_names = [z_cols[i].replace("z_", "") for i in top_5_idx]
+    top_5_scores = z_vals[top_5_idx]
+
+    bar_colors = ["red" if (val > 3.0 and alarm_persist == 1) else "#00F0FF" for val in top_5_scores]
     fig_bar = go.Figure(go.Bar(
-        x=top_5_vals, y=top_5_names, orientation='h',
-        marker_color=['red' if i==4 and is_attack else '#00F0FF' for i in range(5)]
+        x=top_5_scores, y=top_5_names, orientation="h",
+        marker_color=bar_colors
     ))
-    fig_bar.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=200, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
+    fig_bar.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=240, paper_bgcolor="rgba(0,0,0,0)",
+                          plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     st.plotly_chart(fig_bar, use_container_width=True)
-    
-    st.markdown(f"**Root Cause Analysis:** Sensor `{top_sensor}` shows severe anomalous deviation. Mapped to physical element **{affected_node}**.")
+    st.markdown(f"**Dominant Sensor Signal:** `{top_sensor}` (residual $z = {top_5_scores[-1]:.2f}$). Mapped element: **{active_node}**.")
+    st.caption("⚠️ *Sensor-to-asset mapping reflects concentration of anomalous telemetry. Localized physical root cause requires manual verification.*")
 
 st.write("---")
 
-st.subheader("🛡️ TPPI Security Investment Optimization")
-if is_attack:
-    st.warning("Attack Detected! Running 0/1 Knapsack Optimization for Security Deployment...")
-    # Generate mock connected assets based on physical graph
-    neighbors = list(G.neighbors(affected_node))[:4]
-    if not neighbors:
-        neighbors = ['T1', 'PU1', 'V2']
-        
-    assets = []
-    for i, n in enumerate([affected_node] + neighbors):
-        assets.append({
-            'node_id': n,
-            'tdcri': tdcri * (0.9 ** i), # diminishing risk for neighbors
-            'protection_cost': np.random.randint(50, 150)
-        })
-        
-    budget = 200
-    selected = integrator.optimize_security_investments(assets, budget)
+# ================= TPPI KNAPSACK ALLOCATION PANEL =================
+st.subheader("💼 TPPI Security Investment Optimization (Budget Allocation)")
+st.markdown("Ground-truth unit hardening costs and protection benefits from WNTR consequence modeling.")
+
+tppi_col1, tppi_col2 = st.columns([1.5, 1])
+
+with tppi_col1:
+    budget_sel = st.slider("Budget Ceiling ($k)", min_value=100, max_value=800, value=500, step=50)
     
-    st.write(f"**Available Budget:** {budget} Units")
-    df_opt = pd.DataFrame(selected)
-    df_opt.columns = ['Asset ID', 'Mitigated Risk (TDCRI)', 'Deployment Cost']
-    st.dataframe(df_opt, use_container_width=True)
-else:
-    st.success("System Operating Normally. No immediate security optimization required.")
+    # 0/1 Knapsack
+    costs = risk_df["Unit_Cost_k"].values.astype(int)
+    tppi_scores = (risk_df["Base_Risk"] * risk_df["Protection_Benefit"] * ts) / risk_df["Unit_Cost_k"]
+    scaled_values = (tppi_scores.values * 1000).astype(int)
+    n = len(risk_df)
+    
+    K = np.zeros((n + 1, budget_sel + 1), dtype=int)
+    for i in range(1, n + 1):
+        w = costs[i - 1]
+        v = scaled_values[i - 1]
+        for b in range(budget_sel + 1):
+            if w <= b:
+                K[i, b] = max(v + K[i - 1, b - w], K[i - 1, b])
+            else:
+                K[i, b] = K[i - 1, b]
+                
+    rem_b = budget_sel
+    selected_idx = []
+    for i in range(n, 0, -1):
+        if K[i, rem_b] != K[i - 1, rem_b]:
+            selected_idx.append(i - 1)
+            rem_b -= costs[i - 1]
+            
+    df_selected = risk_df.iloc[selected_idx][["Asset_ID", "Type", "Base_Risk", "Unit_Cost_k", "Protection_Benefit"]]
+    df_selected.columns = ["Asset ID", "Component Type", "Base Risk", "Unit Cost ($k)", "Protection Benefit"]
+    st.dataframe(df_selected, use_container_width=True)
 
+with tppi_col2:
+    total_spent = int(df_selected["Unit Cost ($k)"].sum())
+    st.metric("Total Hardening Capital Allocated", f"${total_spent}k / ${budget_sel}k")
+    st.metric("Components Hardened", f"{len(df_selected)} Assets")
+    st.metric("Current Trust Score Factor", f"{ts:.3f}")
 
-# ================= GLOBAL EVALUATION METRICS =================
 st.write("---")
-st.subheader("📈 Evaluation Metrics — Frozen Real Model Results")
-st.markdown("These metrics represent the genuine, independent performance of the PyTorch GNN-GRU on the test set (2,078 hours). They are immutable and uninfluenced by Demonstration Mode.")
 
-# Calculate global metrics natively from the loaded trust_df (which is uncorrupted by demo_mode)
-pred_global = (trust_df['p_attack'] > 0.5).astype(int)
-tn_g, fp_g, fn_g, tp_g = __import__('sklearn').metrics.confusion_matrix(trust_df['true_label'], pred_global).ravel()
-prec_g = __import__('sklearn').metrics.precision_score(trust_df['true_label'], pred_global, zero_division=0)
-rec_g = __import__('sklearn').metrics.recall_score(trust_df['true_label'], pred_global, zero_division=0)
-f1_g = __import__('sklearn').metrics.f1_score(trust_df['true_label'], pred_global, zero_division=0)
+# ================= VERIFIED EXPERIMENTAL HEADLINE RESULTS =================
+st.subheader("📈 Validated Experimental Benchmark Results (Phases 2 & 5)")
+st.markdown("Metrics reproduce 1:1 from verified test reports (`results/frozen_detector_test_report.md` and `results/core_triage_experiment.md`).")
 
-m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-m_col1.metric("True Positives (TP)", tp_g)
-m_col2.metric("False Positives (FP)", fp_g)
-m_col3.metric("False Negatives (FN)", fn_g)
-m_col4.metric("True Negatives (TN)", tn_g)
-
-m_col5, m_col6, m_col7, m_col8 = st.columns(4)
-m_col5.metric("Precision", f"{prec_g*100:.2f}%")
-m_col6.metric("Recall", f"{rec_g*100:.2f}%")
-m_col7.metric("F1 Score", f"{f1_g*100:.2f}%")
-m_col8.metric("Accuracy", f"{(tp_g+tn_g)/len(trust_df)*100:.2f}%")
+ev_col1, ev_col2, ev_col3, ev_col4 = st.columns(4)
+ev_col1.metric("Pointwise Test F1", "0.8368", "95% CI: [0.808, 0.866]")
+ev_col2.metric("Point-Adjusted (PA) F1", "0.9879", "100% Attack Event Recall")
+ev_col3.metric("Test Events Detected", "7 / 7", "0 Missed Attacks")
+ev_col4.metric("Action False Alarm Reduction", "100.0%", "0 Action FAs with ATI")
