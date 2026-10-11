@@ -5,9 +5,9 @@
     "rows": "ATT_FLAG == -999 (unlabelled, assumed normal) farther than margin_hours from any labelled attack",
     "margin_hours": 48
   },
-  "model": {"type": "ridge_residual", "alpha": 1.0, "lags": 1, "score": "top3_mean_z", "n_top": 3},
+  "model": {"type": "ridge_residual", "alpha": 10.0, "lags": 1, "score": "top3_mean_z", "n_top": 3},
   "threshold": {"quantile": 99.0, "source": "training scores only"},
   "persistence": {"enabled": true, "k": 3, "n": 6, "causal": true},
   "test_file": "data/raw/BATADAL_test_dataset_labeled.csv",
-  "notes": "Settings fixed BEFORE the one-shot test evaluation. Do not edit after viewing any test result."
+  "notes": "Adopted Configuration 4 (Ridge alpha=10.0, Top-3, Persistence 3-of-6, q=99.0). Settings fixed BEFORE the one-shot test evaluation. Do not edit after viewing any test result."
 }
