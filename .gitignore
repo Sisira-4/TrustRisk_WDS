@@ -1,5 +1,6 @@
 # Python caches and bytecode
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
@@ -11,4 +12,5 @@ __pycache__/
 
 # Data artifacts and scratch
 data/zones/
+archive/
 
