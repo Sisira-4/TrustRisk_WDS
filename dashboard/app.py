@@ -169,8 +169,8 @@ is_action = (decision == "ACTION")
 is_review = (decision == "REVIEW")
 card_style = "kpi-alert" if is_action else ("kpi-review" if is_review else "")
 
-# Calculate live cyber-physical risk (TDCRI) strictly using the mapped alert asset Base Risk
-tdcri_live = alert_base_risk * p_attack * ts
+# Calculate canonical cyber-physical risk (TDCRI = TS * R_physical) strictly using the mapped alert asset Base Risk
+tdcri_live = ts * alert_base_risk
 
 with kpi1:
     st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Calibrated Threat (PCS)</div><div class="kpi-value">{pcs*100:.1f}%</div></div>', unsafe_allow_html=True)
@@ -181,7 +181,7 @@ with kpi3:
 with kpi4:
     st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Unified Trust Score (TS)</div><div class="kpi-value">{ts:.3f}</div></div>', unsafe_allow_html=True)
 with kpi5:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Alert Dynamic Risk ({primary_asset})</div><div class="kpi-value">{tdcri_live:.3f}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Dynamic Consequence (TDCRI: {primary_asset})</div><div class="kpi-value">{tdcri_live:.3f}</div></div>', unsafe_allow_html=True)
 
 st.write("---")
 

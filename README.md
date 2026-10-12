@@ -1,7 +1,7 @@
 # TrustRisk-WDS: Trust-Gated Alert Triage & Hydraulic Risk Prioritization for Water Distribution Systems
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests Passing](https://img.shields.io/badge/pytest-23%20passed-brightgreen.svg)](tests/)
+[![Tests Passing](https://img.shields.io/badge/pytest-30%20passed-brightgreen.svg)](tests/)
 [![Dataset: BATADAL](https://img.shields.io/badge/dataset-BATADAL%20(C--Town)-orange.svg)](data/)
 [![Replication: 1--Command](https://img.shields.io/badge/reproduce_all.py-verified-success.svg)](reproduce_all.py)
 
@@ -16,7 +16,7 @@ By evaluating incoming detection residuals through a tripartite **Trust-Gating E
 1. **100.0% False-Alarm Event Elimination in Action Tier**: Trust-gated triage eliminates all 3 of 3 persistence false alarms (and 4 of 4 raw threshold alarms) from the immediate automated response tier.
 2. **Zero Attack Loss (100% Attack Event Recall)**: All 7 of 7 ground-truth cyber-physical attack events are preserved across action and review tiers (6 in immediate action, 1 in human review).
 3. **Transparent Pointwise Evaluation (No Metric Inflation)**:
-   - **Pointwise F1**: **0.8368** (i.i.d. 95% CI: $[0.8079, 0.8659]$; moving-block bootstrap 95% CI: $[0.7586, 0.9022]$ at 12h, $[0.7015, 0.9241]$ at 48h)
+   - **Pointwise F1**: **0.8368** (official frozen 95% CI: $[0.8083, 0.8659]$; 2,000-replicate i.i.d. sensitivity $[0.8079, 0.8659]$; moving-block bootstrap $[0.7586, 0.9022]$ at 12h, $[0.7015, 0.9241]$ at 48h)
    - **Pointwise Precision & Recall**: Precision **0.9677**, Recall **0.7371** (300 / 407 attack hours detected; 107 attack hours missed during accumulation phases)
    - **Point-Adjusted F1**: **0.9879** (Precision: 0.9760, Recall: 1.0000)
    - **ROC-AUC**: **0.9180** | **PR-AUC**: **0.8684**
@@ -46,7 +46,7 @@ To verify leakage guards, unit tests, trust engine calibration, and risk constra
 ```bash
 pytest -q
 ```
-*(Expected: 23 passed in ~2.5s).*
+*(Expected: 30 passed in ~3s).*
 
 ### 4. Launch the Decision Support Dashboard
 To launch the interactive operational dashboard bound strictly to the clean pipeline outputs:
