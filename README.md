@@ -76,16 +76,19 @@ TrustRisk-WDS/
 │   ├── raw/                 # Official BATADAL datasets (Dataset 03, 04, Test Labeled)
 │   └── v2/                  # Strict cross-validation folds and metadata
 ├── network/
-│   └── epanet/CTOWN.INP     # Official C-Town EPANET hydraulic network
+│   ├── epanet/CTOWN.INP     # Official C-Town EPANET hydraulic network
+│   └── mappings/            # Sensor-to-physical EPANET asset mapping
 ├── models/
 │   └── trust/               # Unified Trust Engine (Platt PCS, Ensemble UQS, Perturbation ERS)
+│       ├── unified_trust_engine.py  # Canonical trust scoring & calibration
+│       └── policy5_router.py        # Shared Policy 5 triage decision router
 ├── risk/
 │   └── hydraulic_simulation.py  # WNTR EPANET hydraulic outage engine & TPPI Knapsack
 ├── experiments/
 │   ├── data_card.py         # Data Card & label semantics verification
 │   ├── run_trust_calibration.py  # Phase 3 calibration & UQS/ERS validation
 │   ├── run_core_triage_experiment.py  # Phase 5 headline 5-policy triage matrix
-│   └── v3_residual/         # Frozen residual detector (run_cv.py, run_test_once.py)
+│   └── v3_residual/         # Frozen residual detector (run_cv.py, run_test_once.py, run_block_bootstrap.py)
 ├── results/
 │   ├── data_card.md         # Official Data Card table
 │   ├── frozen_detector_test_report.md  # Single-shot frozen test evaluation report
@@ -94,13 +97,14 @@ TrustRisk-WDS/
 │   ├── core_triage_experiment.md  # Headline 5-policy triage comparison table
 │   └── v3/
 │       ├── test_report.json # Single-shot frozen test report (re-run blocker active)
-│       └── trust_pipeline_clean.csv  # Clean per-hour triage stream
+│       ├── block_bootstrap_report.json  # Moving-block bootstrap sensitivity analysis
+│       └── trust_pipeline_clean.csv     # Clean per-hour triage stream
 ├── dashboard/
 │   └── app.py               # Streamlit SOC dashboard (bound 1:1 to clean pipeline)
 ├── docs/
-│   └── MANUSCRIPT_REVISION.md  # Comprehensive manuscript text with all 5 tables
-├── tests/                   # Full pytest suite (23 passing tests)
-├── archive/                 # Quarantined legacy scripts and non-reportable code
+│   ├── ACCEPTANCE_CHECKLIST.md # Audit verification matrix across three formal tiers
+│   └── MANUSCRIPT_REVISION.md  # Comprehensive manuscript text with all 5 tables & citations
+├── tests/                   # Full pytest suite (30 passing tests)
 ├── frozen_config.json       # Pre-committed frozen hyperparameters (Ridge α=10.0, q=99.0)
 ├── reproduce_all.py         # Master one-command replication suite
 └── requirements.txt         # Pinned Python dependencies

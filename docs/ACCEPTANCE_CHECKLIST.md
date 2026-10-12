@@ -1,7 +1,7 @@
 # TrustRisk-WDS: Operational & Scientific Sign-Off Acceptance Checklist
 
 **Evaluation Date**: 2026-10-12  
-**Commit Audited**: d6beba9 (and follow-up consistency alignment)  
+**Commit Audited**: f3e5d06 (and follow-up documentation refinement)  
 **Environment**: Windows 11 / Python 3.13.14 (Validated across Python 3.10, 3.11, 3.12 via GitHub Actions CI)  
 **Evaluator**: Antigravity Pair-Programming Audit Suite  
 
