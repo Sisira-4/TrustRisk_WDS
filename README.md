@@ -14,9 +14,10 @@ By evaluating incoming detection residuals through a tripartite **Trust-Gating E
 ## Headline Findings on Official Quarantined BATADAL Test Benchmark
 
 1. **100.0% False-Alarm Event Elimination in Action Tier**: Trust-gated triage eliminates all 3 of 3 persistence false alarms (and 4 of 4 raw threshold alarms) from the immediate automated response tier.
-2. **Zero Attack Loss (100% Attack Recall)**: All 7 of 7 ground-truth cyber-physical attacks are preserved across action and review tiers (6 in immediate action, 1 in human review).
-3. **Rigorous Pointwise Evaluation (No Metric Inflation)**:
-   - **Pointwise F1**: **0.8368** (95% CI: $[0.8083, 0.8659]$, Precision: 0.9677, Recall: 0.7371)
+2. **Zero Attack Loss (100% Attack Event Recall)**: All 7 of 7 ground-truth cyber-physical attack events are preserved across action and review tiers (6 in immediate action, 1 in human review).
+3. **Transparent Pointwise Evaluation (No Metric Inflation)**:
+   - **Pointwise F1**: **0.8368** (i.i.d. 95% CI: $[0.8079, 0.8659]$; moving-block bootstrap 95% CI: $[0.7586, 0.9022]$ at 12h, $[0.7015, 0.9241]$ at 48h)
+   - **Pointwise Precision & Recall**: Precision **0.9677**, Recall **0.7371** (300 / 407 attack hours detected; 107 attack hours missed during accumulation phases)
    - **Point-Adjusted F1**: **0.9879** (Precision: 0.9760, Recall: 1.0000)
    - **ROC-AUC**: **0.9180** | **PR-AUC**: **0.8684**
 4. **Physical Consequence Grounding**: We demonstrate that graph betweenness centrality alone fails to predict hydraulic consequence ($\rho = -0.1932$), whereas our Cyber-Physical Base Risk strongly correlates with simulated pressure deficits ($\rho = \mathbf{+0.6158}, p = 1.06 \times 10^{-4}$).

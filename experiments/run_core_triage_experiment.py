@@ -15,12 +15,15 @@ Measures:
 - Mean Alert Delay (hours)
 - Trade-off operating curve and component ablation
 """
+import sys
 from pathlib import Path
 import json
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 RESULTS_DIR = ROOT / "results"
 V3_RESULTS_DIR = RESULTS_DIR / "v3"
 PIPE_PATH = V3_RESULTS_DIR / "trust_pipeline_clean.csv"
@@ -135,18 +138,19 @@ def main():
     p3_review = (alarm_per == 1) & (pcs < 0.85)
     res_p3 = evaluate_policy(p3_action, p3_review, y)
     
-    # Load physical risk assets and sensor mapping
+    # Load physical risk assets and sensor mapping using shared policy5_router
+    from models.trust.policy5_router import load_risk_and_mapping, compute_alert_physical_risk, evaluate_policy_5_decision
     MAPPING_PATH = ROOT / "network" / "mappings" / "batadal_epanet_mapping.csv"
-    risk_df = pd.read_csv(RISK_PATH)
-    mapping_df = pd.read_csv(MAPPING_PATH)
-    s2a = dict(zip(mapping_df["variable"], mapping_df["element"]))
-    a2r = dict(zip(risk_df["Asset_ID"], risk_df["Base_Risk"]))
+    s2a, a2r = load_risk_and_mapping(MAPPING_PATH, RISK_PATH)
     
-    # Retrieve physical consequence / Base Risk for top anomalous sensors
-    r1 = np.array([a2r.get(s2a.get(s, ""), 0.20) for s in df["top1_sensor"]])
-    r2 = np.array([a2r.get(s2a.get(s, ""), 0.20) for s in df["top2_sensor"]])
-    r3 = np.array([a2r.get(s2a.get(s, ""), 0.20) for s in df["top3_sensor"]])
-    r_phys = np.maximum(r1, np.maximum(r2, r3))
+    # Retrieve physical consequence / Base Risk for top anomalous sensors using shared router
+    alert_assets = []
+    r_phys_list = []
+    for s1, s2, s3 in zip(df["top1_sensor"], df["top2_sensor"], df["top3_sensor"]):
+        asset, risk = compute_alert_physical_risk([s1, s2, s3], s2a, a2r)
+        alert_assets.append(asset)
+        r_phys_list.append(risk)
+    r_phys = np.array(r_phys_list)
     tdcri = ts * r_phys
 
     # Policy 4: Full Trust-Gated Alert Triage (ATI Bands)
@@ -155,16 +159,13 @@ def main():
     p4_review = (alarm_per == 1) & (ts >= 0.50) & (ts < 0.80)
     res_p4 = evaluate_policy(p4_action, p4_review, y)
     
-    # Policy 5: Trust + Physical Risk Integrated Triage (ATI x TDCRI Gate)
-    # Physically-grounded risk modulation: Alarms on high-risk physical assets (Base Risk >= 0.55,
-    # e.g. primary pumps PU2, valves v1, tanks T1/T2/T4) escalate with validated trust (TS >= 0.75).
-    # Moderately critical assets (Base Risk >= 0.35) require high trust (TS >= 0.80).
-    # Low-risk or uncorroborated alarms remain in the Human Review queue.
-    p5_action = (alarm_per == 1) & (
-        ((ts >= 0.80) & (r_phys >= 0.35)) |
-        ((ts >= 0.75) & (r_phys >= 0.55))
-    )
-    p5_review = (alarm_per == 1) & ~p5_action & (ts >= 0.50)
+    # Policy 5: Trust + Physical Risk Integrated Triage (ATI x TDCRI Gate) via shared router
+    p5_decisions = [
+        evaluate_policy_5_decision(a, t, r)
+        for a, t, r in zip(alarm_per, ts, r_phys)
+    ]
+    p5_action = np.array([d == "ACTION" for d in p5_decisions])
+    p5_review = np.array([d == "REVIEW" for d in p5_decisions])
     res_p5 = evaluate_policy(p5_action, p5_review, y)
     
     # Compute relative reduction in unnecessary responses vs. Policy 1 and 2

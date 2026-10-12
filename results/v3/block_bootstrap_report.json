@@ -1,0 +1,50 @@
+{
+  "experiment": "temporal_dependence_moving_block_bootstrap",
+  "detector": "v3_residual_ridge",
+  "seed": 42,
+  "total_evaluation_hours": 2089,
+  "attack_hours": 407,
+  "pointwise_f1_nominal": 0.8368,
+  "pointwise_recall_nominal": 0.7371,
+  "pointwise_precision_nominal": 0.9677,
+  "iid_bootstrap_95ci": [
+    0.8079,
+    0.8659
+  ],
+  "moving_block_bootstrap": {
+    "12h_blocks": {
+      "block_length_hours": 12,
+      "n_blocks": 175,
+      "n_bootstraps": 2000,
+      "f1_median": 0.8389,
+      "f1_std_err": 0.0373,
+      "ci_95": [
+        0.7586,
+        0.9022
+      ]
+    },
+    "24h_blocks": {
+      "block_length_hours": 24,
+      "n_blocks": 88,
+      "n_bootstraps": 2000,
+      "f1_median": 0.8372,
+      "f1_std_err": 0.0464,
+      "ci_95": [
+        0.7294,
+        0.9147
+      ]
+    },
+    "48h_blocks": {
+      "block_length_hours": 48,
+      "n_blocks": 44,
+      "n_bootstraps": 2000,
+      "f1_median": 0.8372,
+      "f1_std_err": 0.0578,
+      "ci_95": [
+        0.7015,
+        0.9241
+      ]
+    }
+  },
+  "methodological_safeguard": "Reported as sensitivity analysis alongside i.i.d. bootstrap; does not replace frozen test protocol."
+}

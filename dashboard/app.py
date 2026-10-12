@@ -7,8 +7,18 @@ import plotly.graph_objects as go
 import json
 from pathlib import Path
 
-# Base Paths
+import sys
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from models.trust.policy5_router import (
+    load_risk_and_mapping,
+    get_sensor_physical_risk,
+    compute_alert_physical_risk,
+    evaluate_policy_5_decision
+)
+
 CLEAN_PIPE_PATH = ROOT / "results" / "v3" / "trust_pipeline_clean.csv"
 RISK_REPORT_PATH = ROOT / "results" / "risk_assets_report.csv"
 TRIAGE_PATH = ROOT / "results" / "core_triage_experiment.json"
@@ -17,7 +27,7 @@ MAPPING_PATH = ROOT / "network" / "mappings" / "batadal_epanet_mapping.csv"
 
 INP_PATH = ROOT / "network" / "epanet" / "CTOWN.INP"
 
-st.set_page_config(page_title="TrustRisk-WDS Dashboard", layout="wide", page_icon="🛡️")
+st.set_page_config(page_title="TrustRisk-WDS SCADA", layout="wide", page_icon="🛡️")
 
 # Custom CSS for Dark Modern Theme
 st.markdown("""
@@ -31,6 +41,7 @@ st.markdown("""
     .tier-badge-action { background-color: #FF003C; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     .tier-badge-review { background-color: #FFB800; color: black; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     .tier-badge-monitor { background-color: #00F0FF; color: black; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+    .warning-box { background-color: #3d2600; border: 1px solid #FFB800; padding: 12px; border-radius: 6px; color: #FFE082; margin-bottom: 12px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -40,7 +51,7 @@ def load_data():
     if not CLEAN_PIPE_PATH.exists():
         raise FileNotFoundError(f"Clean pipeline file not found at {CLEAN_PIPE_PATH}. Run 'python reproduce_all.py' first.")
     if not RISK_REPORT_PATH.exists():
-        raise FileNotFoundError(f"Risk report file not found at {RISK_REPORT_PATH}. Run 'python risk/hydraulic_simulation.py' first.")
+        raise FileNotFoundError(f"Risk report file not found at {RISK_REPORT_PATH}. Run 'python reproduce_all.py' first.")
     if not TRIAGE_PATH.exists():
         raise FileNotFoundError(f"Core triage results not found at {TRIAGE_PATH}. Run 'python experiments/run_core_triage_experiment.py' first.")
 
@@ -48,8 +59,8 @@ def load_data():
     df_risk = pd.read_csv(RISK_REPORT_PATH)
     with open(TRIAGE_PATH, "r") as f:
         triage_meta = json.load(f)
-    mapping_df = pd.read_csv(MAPPING_PATH) if MAPPING_PATH.exists() else pd.DataFrame()
-    return df_pipe, df_risk, triage_meta, mapping_df
+    s2a, a2r = load_risk_and_mapping(MAPPING_PATH, RISK_REPORT_PATH)
+    return df_pipe, df_risk, triage_meta, s2a, a2r
 
 
 @st.cache_resource
@@ -66,19 +77,26 @@ def load_graph():
     return G
 
 
-pipe_df, risk_df, triage_meta, mapping_df = load_data()
+pipe_df, risk_df, triage_meta, s2a, a2r = load_data()
 G = load_graph()
 
 # ================= SIDEBAR CONTROLS =================
 st.sidebar.title("🛡️ TrustRisk-WDS SCADA")
 st.sidebar.markdown("**Decision Support & Triage Console**")
 
+# Operational Safety Mode: Default to Operational SCADA (No oracle / y_true labels)
+dashboard_mode = st.sidebar.radio(
+    "Console Operating Mode",
+    ["Operational SCADA View", "Offline Evaluation / Forensic Mode"],
+    index=0,
+    help="Operational SCADA View isolates decision makers from oracle ground-truth labels. Forensic Mode is for offline audit only."
+)
+
 max_t = len(pipe_df) - 1
-t_idx = st.sidebar.slider("Timeline Step (Test Stream Hour)", min_value=0, max_value=max_t, value=320, step=1)
+t_idx = st.sidebar.slider("Timeline Step (Stream Hour)", min_value=0, max_value=max_t, value=320, step=1)
 
 current_row = pipe_df.iloc[t_idx]
 timestamp = current_row["DATETIME"]
-true_label = int(current_row["y_true"])
 p_attack = float(current_row["p_attack"])
 alarm_persist = int(current_row["alarm_persist"])
 ts = float(current_row["TS"])
@@ -87,33 +105,72 @@ uqs = float(current_row["UQS"])
 ers = float(current_row["ERS"])
 ati_band = current_row["ATI_band"]
 
-st.sidebar.markdown(f"**Timestamp:** `{timestamp}`")
-st.sidebar.markdown(f"**Ground Truth:** {'🔴 ATTACK' if true_label == 1 else '🟢 NORMAL'}")
-st.sidebar.markdown(f"**Detector Trigger:** {'⚠️ Persistent Alarm' if alarm_persist == 1 else 'Normal'}")
+# Extract top anomalous sensors for the alert and map to physical asset
+top_sensors = [current_row.get("top1_sensor", "L_T1"), current_row.get("top2_sensor", ""), current_row.get("top3_sensor", "")]
+top_sensors = [s for s in top_sensors if isinstance(s, str) and s]
+primary_asset, alert_base_risk = compute_alert_physical_risk(top_sensors, s2a, a2r)
 
-# Triage Routing Tier
-if alarm_persist == 1:
-    if ts >= 0.80:
-        tier_html = '<span class="tier-badge-action">🚨 IMMEDIATE ACTION</span>'
-    elif ts >= 0.50:
-        tier_html = '<span class="tier-badge-review">👁️ HUMAN REVIEW</span>'
-    else:
-        tier_html = '<span class="tier-badge-monitor">📊 MONITOR / SUPPRESSED</span>'
+# Shared Policy 5 Triage Routing: Evaluated strictly through models.trust.policy5_router
+policy_choice = st.sidebar.selectbox(
+    "Triage Routing Policy",
+    ["Policy 5: Trust + Physical Risk Gate (Canonical)", "Policy 4: Trust Gate Only (ATI Bands)"],
+    index=0
+)
+
+if policy_choice.startswith("Policy 5"):
+    decision = evaluate_policy_5_decision(alarm_persist, ts, alert_base_risk)
 else:
-    tier_html = '<span class="tier-badge-monitor">NORMAL MONITORING</span>'
+    # Policy 4: Action >= 0.80, Review in [0.50, 0.80), Monitor < 0.50
+    if alarm_persist == 1:
+        if ts >= 0.80:
+            decision = "ACTION"
+        elif ts >= 0.50:
+            decision = "REVIEW"
+        else:
+            decision = "MONITOR"
+    else:
+        decision = "MONITOR"
+
+if decision == "ACTION":
+    tier_html = '<span class="tier-badge-action">🚨 IMMEDIATE ACTION</span>'
+elif decision == "REVIEW":
+    tier_html = '<span class="tier-badge-review">👁️ HUMAN REVIEW</span>'
+else:
+    tier_html = '<span class="tier-badge-monitor">📊 MONITOR / SUPPRESSED</span>'
+
+# Operational SCADA Safety Guard: Ground truth ONLY visible in Forensic Mode
+st.sidebar.markdown(f"**Timestamp:** `{timestamp}`")
+st.sidebar.markdown(f"**Detector Status:** {'⚠️ Persistent Alarm' if alarm_persist == 1 else 'Normal Telemetry'}")
+st.sidebar.markdown(f"**Primary Mapped Asset:** `{primary_asset}` (Base Risk = {alert_base_risk:.3f})")
+
+if dashboard_mode == "Offline Evaluation / Forensic Mode":
+    true_label = int(current_row["y_true"])
+    st.sidebar.markdown(
+        f"""<div class="warning-box">
+        <strong>⚠️ FORENSIC ORACLE ENABLED:</strong><br>
+        Ground Truth: {'🔴 ATTACK (1)' if true_label == 1 else '🟢 NORMAL (0)'}<br>
+        <em>For post-incident audit only. Never enabled in operational SCADA.</em>
+        </div>""",
+        unsafe_allow_html=True
+    )
+else:
+    st.sidebar.markdown("🔒 *Ground-truth labels hidden in operational SCADA mode to prevent oracle bias.*")
 
 st.sidebar.markdown(f"**Triage Tier:** {tier_html}", unsafe_allow_html=True)
 st.sidebar.markdown("---")
-st.sidebar.markdown("💡 *Data loaded strictly from verified Phase 3 & 5 clean pipeline outputs. Zero synthetic multipliers.*")
+st.sidebar.markdown("💡 *Routing driven strictly by `models.trust.policy5_router`. Verified zero synthetic multipliers.*")
 
 # ================= MAIN KPI HEADER =================
 st.title("🛡️ TrustRisk-WDS: Trust-Aware Alert Validation & Cyber-Physical Risk Console")
-st.markdown(f"Operational Telemetry at **{timestamp}** | Current Triage State: {tier_html}", unsafe_allow_html=True)
+st.markdown(f"Operational SCADA Telemetry at **{timestamp}** | Active Triage State: {tier_html}", unsafe_allow_html=True)
 
 kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
-is_action = (alarm_persist == 1) and (ts >= 0.80)
-is_review = (alarm_persist == 1) and (ts < 0.80) and (ts >= 0.50)
+is_action = (decision == "ACTION")
+is_review = (decision == "REVIEW")
 card_style = "kpi-alert" if is_action else ("kpi-review" if is_review else "")
+
+# Calculate live cyber-physical risk (TDCRI) strictly using the mapped alert asset Base Risk
+tdcri_live = alert_base_risk * p_attack * ts
 
 with kpi1:
     st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Calibrated Threat (PCS)</div><div class="kpi-value">{pcs*100:.1f}%</div></div>', unsafe_allow_html=True)
@@ -124,9 +181,7 @@ with kpi3:
 with kpi4:
     st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Unified Trust Score (TS)</div><div class="kpi-value">{ts:.3f}</div></div>', unsafe_allow_html=True)
 with kpi5:
-    top_asset = risk_df.iloc[0]
-    tdcri_live = top_asset["Base_Risk"] * p_attack * ts
-    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Peak Dynamic Risk (TDCRI)</div><div class="kpi-value">{tdcri_live:.3f}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Alert Dynamic Risk ({primary_asset})</div><div class="kpi-value">{tdcri_live:.3f}</div></div>', unsafe_allow_html=True)
 
 st.write("---")
 
@@ -148,8 +203,7 @@ with col_viz1:
 
     node_x, node_y, node_color, node_text = [], [], [], []
     top_sensor = current_row.get("top1_sensor", "L_T1")
-    mapped_elem = mapping_df[mapping_df["variable"] == top_sensor]["element"].values if len(mapping_df) > 0 else []
-    active_node = mapped_elem[0] if len(mapped_elem) > 0 else "T1"
+    active_node = primary_asset if primary_asset not in ("UNKNOWN", "UNMAPPED") else "T1"
 
     for node in G.nodes():
         x, y = pos[node]

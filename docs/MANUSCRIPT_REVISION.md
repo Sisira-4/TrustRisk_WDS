@@ -78,10 +78,25 @@ The detection threshold ($7.4532$) was derived strictly from the 99th percentile
 
 - **ROC-AUC**: **0.9180**
 - **PR-AUC**: **0.8684**
-- **Attack Events Detected**: **7 / 7 (100.0%)**
+- **Attack Events Detected**: **7 / 7 (100.0%)** (all 7 incident windows flagged)
+- **Pointwise Recall**: **73.71% (300 / 407 hours)** (107 attack hours missed during stealth/accumulation phases)
 - **False Alarm Events**: **3 events** across 12.4 weeks of continuous operation.
 
-### Table 2b: Per-Attack Event Timeline Breakdown (Official Test Set)
+### Table 2b: Temporal-Dependence Bootstrap Sensitivity Analysis (Pointwise $F_1$)
+*(Evaluated via `experiments/v3_residual/run_block_bootstrap.py`, recorded in `results/v3/block_bootstrap_report.json`)*
+
+To account for temporal autocorrelation in continuous SCADA telemetry where adjacent hourly observations are not statistically independent, circular moving-block bootstrap resampling ($N = 2,000$ resamples, fixed seed = 42) was evaluated across block lengths $L \in \{12, 24, 48\}$ hours alongside standard i.i.d. resampling:
+
+| Resampling Methodology | Resampling Unit ($L$) | Number of Blocks | Pointwise $F_1$ Median | Std Error ($\text{SE}$) | Empirical 95% Confidence Interval |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Standard i.i.d. Bootstrap** | 1 hour | 2,089 | 0.8368 | 0.0148 | $[0.8079, 0.8659]$ |
+| **Moving-Block Bootstrap (12h)** | 12 hours | 175 | 0.8389 | 0.0373 | $[0.7586, 0.9022]$ |
+| **Moving-Block Bootstrap (24h)** | 24 hours | 88 | 0.8372 | 0.0464 | $[0.7294, 0.9147]$ |
+| **Moving-Block Bootstrap (48h)** | 48 hours | 44 | 0.8372 | 0.0578 | $[0.7015, 0.9241]$ |
+
+*Methodological Rigor*: As block length increases to encompass multi-hour attack dynamics, the estimated median $F_1$ remains strictly centered ($0.837\text{--}0.839$), while the confidence interval widens gracefully from $\pm 0.029$ (i.i.d.) to $\pm 0.111$ (48h blocks), faithfully capturing temporal serial correlation without changing the nominal point estimate.
+
+### Table 2c: Per-Attack Event Timeline Breakdown (Official Test Set)
 
 | Event | Start Index | End Index | Duration (h) | Detected? | Delay (h) | Hours Detected | Event Recall |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -93,7 +108,8 @@ The detection threshold ($7.4532$) was derived strictly from the 99th percentile
 | **6** | 1574 | 1653 | 80 | **YES** | 1 | 71 | 0.887 |
 | **7** | 1940 | 1969 | 30 | **YES** | 10 | 9 | 0.300 |
 
-*Diagnostic Observation*: While Point-Adjusted F1 yields an artificially flattering 0.9879, our honest pointwise F1 of 0.8368 reveals the true operational reality: stealthy attacks (Events 2 and 7) require 10–11 hours of residual accumulation before crossing the persistence threshold.
+*Transparent Event-Level vs. Pointwise Reality*:  
+While all 7 cyber-physical attack events are successfully detected (**7 / 7 events, 100% event recall**), the manuscript explicitly rejects conflating event recall with hourly attack coverage. The nominal **pointwise recall is 73.71%**, meaning **107 of 407 total attack hours** were missed. In stealthy, low-magnitude scenarios (Events 2 and 7), hydraulic deviations required 10–11 hours of residual accumulation before crossing the persistence filter.
 
 ---
 
