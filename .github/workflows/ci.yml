@@ -2,9 +2,9 @@ name: TrustRisk-WDS Continuous Integration
 
 on:
   push:
-    branches: [ main, feature/residual-detector ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, feature/residual-detector ]
+    branches: [ main ]
 
 jobs:
   test-and-reproduce:
