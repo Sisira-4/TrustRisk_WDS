@@ -26,29 +26,26 @@ def test_dashboard_default_mode_is_operational_no_oracle():
     assert 'if dashboard_mode == "Offline Evaluation / Forensic Mode":' in content
     assert "hidden in operational scada mode" in content.lower()
 
-    # 2. Live rendered UI verification via Streamlit AppTest
-    try:
-        from streamlit.testing.v1 import AppTest
-        at = AppTest.from_file(str(app_path))
-        at.run()
-        assert len(at.exception) == 0, f"Dashboard threw unhandled exceptions: {at.exception}"
-        assert len(at.sidebar.radio) > 0
-        assert at.sidebar.radio[0].value == "Operational SCADA View"
-        
-        # In Operational mode, ensure no ground-truth oracle labels are rendered
-        all_rendered_text = " ".join([m.value for m in at.markdown] + [c.label for c in at.metric])
-        assert "y_true" not in all_rendered_text
-        assert "ATTACK" not in all_rendered_text
-        assert "ground truth" not in all_rendered_text.lower()
-        
-        # In Forensic mode, verify ground-truth warning is rendered
-        at.sidebar.radio[0].set_value("Offline Evaluation / Forensic Mode")
-        at.run()
-        assert len(at.exception) == 0
-        forensic_text = " ".join([m.value for m in at.markdown] + [w.value for w in at.warning])
-        assert "ground-truth" in forensic_text.lower() or "oracle" in forensic_text.lower()
-    except ImportError:
-        pass
+    # 2. Live rendered UI verification via Streamlit AppTest (MANDATORY RUNTIME CHECK)
+    from streamlit.testing.v1 import AppTest
+    at = AppTest.from_file(str(app_path))
+    at.run()
+    assert len(at.exception) == 0, f"Dashboard threw unhandled exceptions: {at.exception}"
+    assert len(at.sidebar.radio) > 0
+    assert at.sidebar.radio[0].value == "Operational SCADA View"
+    
+    # In Operational mode, ensure no ground-truth oracle labels are rendered
+    all_rendered_text = " ".join([m.value for m in at.markdown] + [c.label for c in at.metric])
+    assert "y_true" not in all_rendered_text
+    assert "ATTACK" not in all_rendered_text
+    assert "ground truth" not in all_rendered_text.lower()
+    
+    # In Forensic mode, verify ground-truth warning is rendered
+    at.sidebar.radio[0].set_value("Offline Evaluation / Forensic Mode")
+    at.run()
+    assert len(at.exception) == 0
+    forensic_text = " ".join([m.value for m in at.markdown] + [w.value for w in at.warning])
+    assert "ground-truth" in forensic_text.lower() or "oracle" in forensic_text.lower()
 
 
 def test_shared_policy5_routing_equivalence():

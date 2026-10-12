@@ -1,6 +1,5 @@
 """Fit on dataset04 (margin-free -999 rows) and export per-hour scores and per-sensor residual z-scores
-for ANY input CSV (BATADAL layout). Downstream risk/trust layers can read this file instead of
-experiments/final/trust_pipeline.csv. Usage:
+for ANY input CSV (BATADAL layout). Downstream risk/trust layers read this file. Usage:
     python experiments/v3_residual/export_scores.py --input <csv> --output results/v3/scores.csv
 """
 import argparse, json, sys

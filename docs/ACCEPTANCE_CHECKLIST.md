@@ -60,5 +60,16 @@ A live programmatic headless execution of `dashboard/app.py` inside `tests/test_
 
 ---
 
-## 4. Final Sign-Off Recommendation
-Every requirement outlined in the project review and roadmap has been independently implemented, empirically grounded, and automatically validated. The codebase is **100% compliant and ready for publication**.
+## 4. Current Sign-Off Status & Audit Conclusion
+
+- **Operational & Engineering Invariants**: **VERIFIED & PASSED**
+  - All 30 automated tests pass without directory masking.
+  - Headless Streamlit runtime test via `AppTest` is strictly enforced and verified.
+  - Single-shot test rerun blocker and chronological split masking are active.
+  - WNTR EPANET hydraulic consequences are grounded on `CTOWN.INP`.
+  - Master reproduction script `reproduce_all.py` completes cleanly end-to-end.
+  - Legacy model weights, orphan files, and feature branches are fully purged.
+
+- **Scientific & Manuscript Gate**: **CONDITIONALLY COMPLIANT (Publication In Progress)**
+  - Confirmatory vs. exploratory boundary: The baseline detector threshold was frozen prior to test evaluation; subsequent post-detector operating threshold sweeps are explicitly classified as exploratory sensitivity analyses.
+  - Manuscript revision: Includes explicit Policy 4 vs. Policy 5 breakdowns, transparent 73.71% pointwise recall reporting, and circular moving-block bootstrap boundary documentation. Full peer-review submission remains subject to final related-work reference expansion and venue selection.
