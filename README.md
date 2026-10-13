@@ -39,14 +39,14 @@ To re-run data card verification, trust calibration, WNTR hydraulic simulation, 
 ```bash
 python reproduce_all.py
 ```
-*(Runs in ~25 seconds on a standard desktop).*
+*(Runs in ~2.5 minutes including full 2,000-replicate moving-block bootstrap sensitivity analysis on a standard desktop).*
 
 ### 3. Run the Automated Test Suite
 To verify leakage guards, unit tests, trust engine calibration, and risk constraints:
 ```bash
 pytest -q
 ```
-*(Expected: 30 passed in ~3s).*
+*(Expected: 30 passed in ~6s, including mandatory headless Streamlit AppTest verification).*
 
 ### 4. Launch the Decision Support Dashboard
 To launch the interactive operational dashboard bound strictly to the clean pipeline outputs:

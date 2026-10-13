@@ -19,8 +19,8 @@
 | **Honest Metric Transparency** | Pointwise recall (73.71%, 107 missed hours) strictly separated from 7/7 event recall | **Tier 1 (Documentation & Artifact Audit)** | **PASSED** | `README.md` and `docs/MANUSCRIPT_REVISION.md` explicitly state: *7/7 events detected does not mean all hours detected* |
 | **Single-Shot Test Safeguard** | Active rerun blocker preventing threshold snooping or test leakage | **Tier 2 (Automated Test)** (`tests/test_v3_guard.py`) | **PASSED** | Cryptographic guard in `experiments/v3_residual/run_test_once.py` blocks re-runs and requires explicit user confirmation |
 | **Physics-Grounded Hydraulic Simulation** | WNTR outage consequences on CTOWN.INP validate Base Risk | **Tier 3 (Runtime Simulation)** + **Tier 2 (Test)** (`test_risk.py`) | **PASSED** | rho(Base Risk, Pressure Deficit) = +0.6158 (p = 1.06e-4); Top-10 Kendall tau = 1.0000 |
-| **Automated Test Suite** | Full pass rate with zero directory masking | **Tier 2 (Test Suite Execution)** (`pytest -v`) | **PASSED** | **30 passed in 3.60s (100% pass rate)** |
-| **1-Command Master Reproduction** | End-to-end execution of all 5 phases and canonical tables | **Tier 3 (Runtime Execution)** (`python reproduce_all.py`) | **PASSED** | Complete run in ~25s with exit code 0 |
+| **Automated Test Suite** | Full pass rate with zero directory masking | **Tier 2 (Test Suite Execution)** (`pytest -v`) | **PASSED** | **30 passed in ~6s (100% pass rate)** |
+| **1-Command Master Reproduction** | End-to-end execution of all 5 phases and canonical tables | **Tier 3 (Runtime Execution)** (`python reproduce_all.py`) | **PASSED** | Complete run in ~2.5 minutes (~147s) with exit code 0 |
 
 ---
 
