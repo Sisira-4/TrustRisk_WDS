@@ -22,13 +22,14 @@ RESULTS_DIR = ROOT / "results"
 V3_RESULTS_DIR = RESULTS_DIR / "v3"
 
 
-def run_phase_script(script_rel_path: str, description: str):
+def run_phase_script(script_rel_path: str, description: str, extra_args: list = None):
     """Executes a sub-script and checks return code."""
     script_path = ROOT / script_rel_path
     print(f"\n{'='*70}")
     print(f">> Executing {description} ({script_rel_path})...")
     print(f"{'='*70}")
-    res = subprocess.run([sys.executable, str(script_path)], cwd=str(ROOT), capture_output=True, text=True)
+    cmd = [sys.executable, str(script_path)] + (extra_args or [])
+    res = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True)
     if res.returncode != 0:
         print(f"ERROR executing {script_rel_path}:")
         print(res.stderr)
@@ -53,6 +54,9 @@ def print_table_2():
     test_rep_json = V3_RESULTS_DIR / "test_report.json"
     print("\n" + "#"*70)
     print("TABLE 2: FROZEN RESIDUAL DETECTOR TEST EVALUATION (POINTWISE VS. PA)")
+    print("#"*70)
+    print("Note: Evaluated strictly once via experiments/v3_residual/run_test_once.py")
+    print("under frozen_config.json; rerun blocker active to prevent test data leakage.")
     print("#"*70)
     if not test_rep_json.exists():
         print("Test report JSON not found.")
@@ -137,19 +141,31 @@ def main():
     # 2. Run Frozen Detector Cross-Validation (Phase 2)
     run_phase_script("experiments/v3_residual/run_cv.py", "Phase 2 Cross-Validation Residual Detector (alpha=10.0)")
 
-    # 3. Run Frozen Detector Block Bootstrap Sensitivity (Phase 2 Sensitivity)
+    # 3. Check / Run Frozen Detector Single-Shot Test Evaluation (Phase 2 Quarantined Test)
+    test_rep = V3_RESULTS_DIR / "test_report.json"
+    if not test_rep.exists():
+        run_phase_script("experiments/v3_residual/run_test_once.py", 
+                         "Phase 2 Single-Shot Quarantined Test Evaluation", 
+                         ["--confirm-test-use"])
+    else:
+        print(f"\n{'='*70}")
+        print(">> Phase 2 Quarantined Test Evaluation: verified results/v3/test_report.json.")
+        print(">> Single-shot quarantine locked (run_test_once.py rerun blocker active to prevent test leakage).")
+        print(f"{'='*70}")
+
+    # 4. Run Frozen Detector Block Bootstrap Sensitivity (Phase 2 Sensitivity)
     run_phase_script("experiments/v3_residual/run_block_bootstrap.py", "Phase 2 Moving-Block Bootstrap Temporal Sensitivity")
 
-    # 4. Run Trust Calibration (Phase 3)
+    # 5. Run Trust Calibration (Phase 3)
     run_phase_script("experiments/run_trust_calibration.py", "Phase 3 Trust Calibration & UQS/ERS Validation")
     
-    # 5. Run Hydraulic Risk Simulation (Phase 4)
+    # 6. Run Hydraulic Risk Simulation (Phase 4)
     run_phase_script("risk/hydraulic_simulation.py", "Phase 4 WNTR Hydraulic Consequence & TPPI Knapsack")
     
-    # 6. Run Core Alert Triage Experiment (Phase 5)
+    # 7. Run Core Alert Triage Experiment (Phase 5)
     run_phase_script("experiments/run_core_triage_experiment.py", "Phase 5 Core Alert Triage Experiment")
-    
-    # 7. Display All Canonical Manuscript Tables
+
+    # 8. Display All Canonical Manuscript Tables
     print_table_1()
     print_table_2()
     print_table_3()
