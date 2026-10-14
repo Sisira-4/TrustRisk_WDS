@@ -5,6 +5,7 @@ test evaluation stream across varying block lengths L in {12, 24, 48} hours.
 Preserves the frozen detector and single-shot evaluation protocol; reports
 temporal autocorrelation sensitivity alongside the standard i.i.d. bootstrap.
 """
+import sys
 import json
 from pathlib import Path
 import numpy as np
@@ -12,6 +13,7 @@ import pandas as pd
 from sklearn.metrics import precision_recall_fscore_support
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 SCORES_PATH = ROOT / "results" / "v3" / "trust_pipeline_clean.csv"
 OUT_JSON = ROOT / "results" / "v3" / "block_bootstrap_report.json"
 
@@ -89,6 +91,12 @@ def main():
         "methodological_safeguard": "Reported as sensitivity analysis alongside i.i.d. bootstrap; does not replace frozen test protocol."
     }
     
+    try:
+        from config.loader import get_config_hash
+        report["config_sha256"] = get_config_hash()
+    except Exception:
+        pass
+
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_JSON, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)

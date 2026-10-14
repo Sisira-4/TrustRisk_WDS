@@ -35,7 +35,9 @@ import torch
 import torch.nn as nn
 
 
+import sys
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 RAW_DIR = ROOT / "data" / "raw"
 RESULTS_DIR = ROOT / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)

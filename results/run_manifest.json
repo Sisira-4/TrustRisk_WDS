@@ -1,6 +1,6 @@
 {
   "manifest_version": "1.0",
-  "git_commit": "760d633e94cffd5e78bc158a018b892d6d06f507",
+  "git_commit": "e970ba66c4ca7197513e9ce99eb5186db88c0f92",
   "config_sha256": "9ed8a7fabc9111fcced46a747e69aca67621dc40dbb28bae8b79fe18ab189f48",
   "config_path": "config/trustrisk.yaml",
   "seeds": {

@@ -285,9 +285,14 @@ def main():
     selected_500, spent_500, val_500 = engine.solve_tppi_knapsack(df_risk, budget_k=500, trust_score=0.90)
     print(f"TPPI 0/1 Knapsack (Budget $500k): Spent ${spent_500}k across {len(selected_500)} assets.")
     
-    # Save risk assets CSV
+    # Save risk assets CSV with deterministic precision rounding
     risk_csv_path = RESULTS_DIR / "risk_assets_report.csv"
-    df_risk.to_csv(risk_csv_path, index=False)
+    df_save = df_risk.copy()
+    df_save["Pressure_Deficit"] = df_save["Pressure_Deficit"].apply(lambda v: 0.0 if abs(v) < 1e-4 else round(float(v), 4))
+    for col in ["ISS", "CRI", "Structural_Criticality", "MDCI", "Base_Risk"]:
+        if col in df_save.columns:
+            df_save[col] = df_save[col].round(6)
+    df_save.to_csv(risk_csv_path, index=False)
     
     # Generate Markdown Report
     top10_df = df_risk.sort_values(by="Base_Risk", ascending=False).head(10)
