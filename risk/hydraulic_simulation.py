@@ -420,7 +420,7 @@ def main():
     risk_csv_path = RESULTS_DIR / "risk_assets_report.csv"
     df_save = df_risk.copy()
     df_save["Pressure_Deficit"] = df_save["Pressure_Deficit"].apply(lambda v: 0.0 if abs(v) < 1e-4 else round(float(v), 4))
-    for col in ["ISS", "CRI", "Structural_Criticality", "MDCI", "ASS", "ARS", "TDCRI", "Base_Risk"]:
+    for col in ["ISS", "CRI", "Structural_Criticality", "Operational_Criticality", "Monitoring_Criticality", "Recovery_Complexity", "MDCI", "ASS", "ARS", "TDCRI", "Base_Risk"]:
         if col in df_save.columns:
             df_save[col] = df_save[col].round(6)
     df_save.to_csv(risk_csv_path, index=False)
