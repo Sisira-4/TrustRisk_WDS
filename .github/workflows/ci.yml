@@ -2,7 +2,7 @@ name: TrustRisk-WDS Continuous Integration
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/guide-compliance ]
   pull_request:
     branches: [ main ]
 
