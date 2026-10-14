@@ -39,6 +39,8 @@ def test_pointwise_vs_pa_metric_inflation_invariant():
         data = json.load(f)
         
     for name, m in data.items():
+        if not isinstance(m, dict):
+            continue
         pw_f1 = m["pointwise_f1"]
         pa_f1 = m["pa_f1"]
         # Mathematical invariant: Point-adjustment cannot reduce F1

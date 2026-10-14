@@ -122,5 +122,6 @@
     }
   ],
   "DIAGNOSTIC_ONLY_oracle_threshold_F1": 0.8377,
-  "note": "Frozen single-shot evaluation on official BATADAL test set. Pointwise and PA metrics reported side-by-side."
+  "note": "Frozen single-shot evaluation on official BATADAL test set. Pointwise and PA metrics reported side-by-side.",
+  "config_sha256": "9ed8a7fabc9111fcced46a747e69aca67621dc40dbb28bae8b79fe18ab189f48"
 }

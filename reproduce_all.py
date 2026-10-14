@@ -172,9 +172,17 @@ def print_table_5():
 
 
 def main():
+    from config.loader import get_config_hash, sync_views, generate_run_manifest, load_config
+    cfg = load_config()
+    cfg_hash = get_config_hash()
+
     print("="*70)
     print("   TRUSTRISK-WDS BENCHMARK: FULL END-TO-END REPRODUCTION SUITE")
+    print(f">> Authoritative Config: config/trustrisk.yaml (SHA-256: {cfg_hash})")
     print("="*70)
+
+    # 0. Sync derived configuration views from authoritative master config
+    sync_views(cfg)
     
     # 1. Run Data Card (Phase 1)
     run_phase_script("experiments/data_card.py", "Phase 1 Data Card Verification")
@@ -220,6 +228,10 @@ def main():
     print_table_4()
     print_table_5()
     
+    # 11. Generate Run Manifest
+    manifest = generate_run_manifest()
+    print(f"\n>> Run Manifest generated at results/run_manifest.json (Commit: {manifest['git_commit']})")
+
     print("\n" + "="*70)
     print(">> REPRODUCTION COMPLETE: ALL TABLES & FIGURES GROUNDED 100% IN DATA")
     print("="*70)

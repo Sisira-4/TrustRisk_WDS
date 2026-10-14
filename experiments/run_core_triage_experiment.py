@@ -237,6 +237,12 @@ def main():
         "tradeoff_sweep": tradeoff_records,
         "component_ablation": ablation_records
     }
+    try:
+        from config.loader import get_config_hash
+        json_out["config_sha256"] = get_config_hash()
+    except Exception:
+        pass
+
     with open(RESULTS_DIR / "core_triage_experiment.json", "w") as f:
         json.dump(json_out, f, indent=2)
         

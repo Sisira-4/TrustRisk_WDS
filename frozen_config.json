@@ -26,5 +26,6 @@
   "frozen_at": "2026-10-11T15:39:00+05:30",
   "status": "FROZEN_BEFORE_TEST_EVALUATION",
   "checkpoint_file": "models/detector/frozen_detector_checkpoint.pkl",
-  "checkpoint_sha256": "5758d9eb92ceb0cbd01cd361bdc350ca4f07d013ea401dd1e494caa3e030d8e2"
+  "checkpoint_sha256": "5758d9eb92ceb0cbd01cd361bdc350ca4f07d013ea401dd1e494caa3e030d8e2",
+  "authoritative_config_sha256": "9ed8a7fabc9111fcced46a747e69aca67621dc40dbb28bae8b79fe18ab189f48"
 }

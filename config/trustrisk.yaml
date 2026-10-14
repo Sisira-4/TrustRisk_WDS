@@ -1,0 +1,215 @@
+# ==============================================================================
+# TrustRisk-WDS: Single Authoritative Master Configuration
+# SHA-256 of this file governs all detector, calibration, trust, risk, and triage modules.
+# DO NOT hand-edit thresholds or weights in individual scripts.
+# ==============================================================================
+
+metadata:
+  project: "TrustRisk-WDS"
+  version: "1.0.0"
+  description: "Physics-Grounded, Trust-Gated Alert Triage & Cyber-Physical Risk Prioritization for WDS"
+  authoritative: true
+
+# ------------------------------------------------------------------------------
+# Stochastic Seeds (Ensures 100% Deterministic Reproduction Across Submodules)
+# ------------------------------------------------------------------------------
+seeds:
+  numpy_seed: 42
+  torch_seed: 42
+  bootstrap_seed: 123
+  ers_seed: 456
+  uqs_seed: 789
+
+# ------------------------------------------------------------------------------
+# Dataset Splits, Margins, and Quarantine Protocol
+# ------------------------------------------------------------------------------
+data:
+  train_normal_baseline: "data/raw/BATADAL_dataset03.csv"
+  train_cross_validation: "data/raw/BATADAL_dataset04.csv"
+  test_labeled: "data/raw/BATADAL_test_dataset_labeled.csv"
+  test_unlabeled: "data/raw/BATADAL_test_dataset.csv"
+  network_inp: "network/epanet/CTOWN.INP"
+  margin_hours: 48
+  unlabelled_flag: -999
+  cv_folds: 5
+  cv_protocol: "5-fold event-held-out CV with +-48h margins"
+
+# ------------------------------------------------------------------------------
+# Phase 2: Frozen Residual Anomaly Detector Hyperparameters
+# ------------------------------------------------------------------------------
+detector:
+  name: "v3_residual_ridge_alpha10"
+  model_type: "ridge_residual"
+  ridge_alpha: 10.0
+  lags: 1
+  n_top: 3
+  score_aggregation: "top3_mean_z"
+  scaling_method: "standard_zscore"
+  threshold_quantile: 99.0
+  threshold_source: "dataset04_margin_free_pool"
+  persistence:
+    enabled: true
+    k: 3
+    n: 6
+    causal: true
+  checkpoint_file: "models/detector/frozen_detector_checkpoint.pkl"
+  checkpoint_sha256: "5758d9eb92ceb0cbd01cd361bdc350ca4f07d013ea401dd1e494caa3e030d8e2"
+  status: "FROZEN_BEFORE_TEST_EVALUATION"
+  frozen_at: "2026-10-11T15:39:00+05:30"
+  cv_performance:
+    pooled_tpr: 0.7717
+    pooled_fpr_per_hour: 0.0219
+    pooled_pointwise_f1: 0.7284
+    projected_f1: 0.8289
+
+# ------------------------------------------------------------------------------
+# Phase 3: Multi-Dimensional Trust Layer (PCS, UQS, ERS, HRS, TS, ATI)
+# ------------------------------------------------------------------------------
+trust:
+  calibration:
+    method: "platt" # Supported: platt, temperature_scaling, isotonic
+    temperature: 1.0
+  weights:
+    # Canonical 4-term trust score weights: w1*PCS + w2*(1-UQS) + w3*ERS + w4*HRS
+    w1: 0.40
+    w2: 0.30
+    w3: 0.15
+    w4: 0.15
+    # 3-term weights (used when HRS is uninitialized / cold start)
+    w_pcs_3term: 0.45
+    w_uqs_3term: 0.35
+    w_ers_3term: 0.20
+  ati_bands:
+    # Action Triage Index operational bands
+    action_threshold: 0.80   # TS >= 0.80: Action tier (automated SCADA interlock)
+    review_threshold: 0.50   # 0.50 <= TS < 0.80: Review tier (asynchronous analyst review)
+    monitor_threshold: 0.0   # TS < 0.50: Monitor tier (low trust / noise suppression)
+  hrs:
+    rolling_window_hours: 168 # 1 week rolling historical precision
+    cold_start_fallback_rule: "prior_rate"
+    cold_start_prior: 1.0
+    min_samples: 1
+  uqs:
+    epistemic_bootstrap_blocks: 10
+    block_size_hours: 24
+    alpha_epistemic: 0.85
+  ers:
+    n_draws: 5
+    noise_std: 0.05
+    top_k: 3
+
+# ------------------------------------------------------------------------------
+# Phase 4: Physics-Grounded Hydraulic Risk Layer (MDCI, ASS, ISS, CRI, ARS, TDCRI, TPPI)
+# ------------------------------------------------------------------------------
+risk:
+  simulation:
+    duration_hours: 24
+    pressure_drop_threshold_m: 2.0
+    monitored_junctions:
+      - "J280"
+      - "J269"
+      - "J300"
+      - "J256"
+      - "J289"
+      - "J415"
+      - "J302"
+      - "J306"
+      - "J307"
+      - "J317"
+      - "J14"
+      - "J422"
+  tdcri_weights:
+    # Canonical Proposal Formula:
+    # TDCRI = w_mdci*MDCI + w_ass*ASS + w_iss*ISS + w_cri*CRI + w_ars*(1-ARS) + w_ts*TS
+    w_mdci: 0.25
+    w_ass: 0.20
+    w_iss: 0.20
+    w_cri: 0.15
+    w_ars: 0.10
+    w_ts: 0.10
+    # Legacy alias terms for backward compatibility:
+    w_vuln: 0.20
+    w_press: 0.20
+    w_flow: 0.15
+    w_crit: 0.25
+  mdci_weights:
+    # Multi-Dimensional Criticality Index weights (beta_1..beta_4)
+    beta_1: 0.25 # Structural Criticality
+    beta_2: 0.25 # Operational Hydraulic Impact (Demand/Flow)
+    beta_3: 0.25 # Monitoring / Sensor Significance
+    beta_4: 0.25 # Recovery Complexity
+    structural_subcomponents:
+      betweenness: 0.40
+      closeness: 0.40
+      degree: 0.20
+  ass_weights:
+    # Attack Susceptibility Score 5-factor weights (gamma_1..gamma_5)
+    gamma_1: 0.25 # Monitoring coverage
+    gamma_2: 0.20 # Physical exposure
+    gamma_3: 0.20 # Cyber accessibility
+    gamma_4: 0.20 # Sensor importance
+    gamma_5: 0.15 # Zone vulnerability
+    component_defaults:
+      Pump: 0.90
+      Valve: 0.85
+      Tank: 0.80
+      Junction: 0.60
+      fallback: 0.20
+  ars_weights:
+    # Asset Resilience Score 4-factor weights (v_1..v_4)
+    v_1: 0.30 # Redundancy
+    v_2: 0.25 # Recovery Time
+    v_3: 0.25 # Alternative Paths
+    v_4: 0.20 # Operational Flexibility
+  tppi:
+    mitigation_budget_dollars: 50000.0
+    budget_k: 50.0
+    solver: "highs"
+
+# ------------------------------------------------------------------------------
+# Cost & Damage Schedule (Phase 5 / 6 Triage Cost Matrix & Municipal Hardening)
+# ------------------------------------------------------------------------------
+costs:
+  operational_triage:
+    actuator_damage: 15000.0            # Direct actuator failure/wear per unmitigated event ($)
+    downtime: 2500.0                    # Operational municipal service downtime per hour ($/h)
+    contaminated_volume: 45.0           # Decontamination cost per m^3 contaminated ($/m^3)
+    false_dispatch: 1200.0              # Cost of rolling emergency field crews for false alarms ($)
+    inspection: 75.0                    # Desk analysis cost to review an alert in Review queue ($)
+    unmitigated_attack_hourly_rate: 5000.0 # Continuing operational damage per unmitigated attack hour ($/h)
+  hardening_assets:
+    Pump:
+      unit_cost_k: 120.0
+      protection_benefit: 0.85
+      description: "Secure PLC, authenticated actuator & physical enclave"
+    Valve:
+      unit_cost_k: 80.0
+      protection_benefit: 0.80
+      description: "Remote telemetry encryption & dual-redundant solenoid"
+    Tank:
+      unit_cost_k: 100.0
+      protection_benefit: 0.90
+      description: "Multi-sensor level probe & physical intrusion fencing"
+    Junction:
+      unit_cost_k: 40.0
+      protection_benefit: 0.70
+      description: "Pressure transducer cryptographic signing tap"
+
+# ------------------------------------------------------------------------------
+# Artifact Output Paths
+# ------------------------------------------------------------------------------
+paths:
+  results_dir: "results"
+  v3_results_dir: "results/v3"
+  models_dir: "models"
+  run_manifest: "results/run_manifest.json"
+  test_report_json: "results/v3/test_report.json"
+  cv_report_json: "results/v3/cv_report.json"
+  block_bootstrap_report_json: "results/v3/block_bootstrap_report.json"
+  baseline_comparison_json: "results/baseline_comparison.json"
+  core_triage_experiment_json: "results/core_triage_experiment.json"
+  calibration_report_md: "results/calibration_report.md"
+  risk_assets_report_csv: "results/risk_assets_report.csv"
+  risk_invalid_assets_csv: "results/risk_invalid_assets.csv"
+  tppi_decisions_json: "results/tppi_decisions.json"
+  trust_pipeline_clean_csv: "results/v3/trust_pipeline_clean.csv"

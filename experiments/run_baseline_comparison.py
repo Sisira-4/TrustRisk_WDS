@@ -287,6 +287,12 @@ def run_baselines():
         "TrustRisk_WDS_Policy5_TrustRiskGate": policy5_results,
     }
 
+    try:
+        from config.loader import get_config_hash
+        all_baselines["config_sha256"] = get_config_hash()
+    except Exception:
+        pass
+
     out_file = RESULTS_DIR / "baseline_comparison.json"
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(all_baselines, f, indent=2)

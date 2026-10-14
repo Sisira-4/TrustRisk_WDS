@@ -206,6 +206,42 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
     cal_rep_path = RESULTS_DIR / "calibration_report.md"
     cal_rep_path.write_text(report_md, encoding="utf-8")
     print(f"Saved calibration report to {cal_rep_path}")
+
+    # Also save structured JSON calibration metrics
+    from config.loader import get_config_hash
+    cal_json = {
+        "config_sha256": get_config_hash(),
+        "validation": {
+            "ece_before": float(ece_val_before),
+            "ece_after": float(ece_val_after),
+            "brier_before": float(brier_val_before),
+            "brier_after": float(brier_val_after),
+            "nll_before": float(nll_val_before),
+            "nll_after": float(nll_val_after)
+        },
+        "test": {
+            "ece_before": float(ece_test_before),
+            "ece_after": float(ece_test_after),
+            "brier_before": float(brier_test_before),
+            "brier_after": float(brier_test_after),
+            "nll_before": float(nll_test_before),
+            "nll_after": float(nll_test_after)
+        },
+        "platt_scale": float(calibrator.calibrator.coef_[0][0]),
+        "platt_bias": float(calibrator.calibrator.intercept_[0]),
+        "uqs_error_auroc": float(uqs_error_auroc),
+        "ers_attack_mean": float(ers_test_attack_mean),
+        "ers_normal_mean": float(ers_test_normal_mean),
+        "ers_fp_mean": float(ers_test_fp_mean),
+        "ati_counts": {
+            "action": int((ati_test == 'ACTION').sum()),
+            "review": int((ati_test == 'REVIEW').sum()),
+            "monitor": int((ati_test == 'MONITOR').sum())
+        }
+    }
+    with open(RESULTS_DIR / "trust_calibration.json", "w", encoding="utf-8") as f:
+        json.dump(cal_json, f, indent=2)
+
     print(report_md)
 
 

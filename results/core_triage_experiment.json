@@ -165,5 +165,6 @@
       "Review Queue FA Events": 0,
       "Mean Delay (h)": 9.57
     }
-  ]
+  ],
+  "config_sha256": "9ed8a7fabc9111fcced46a747e69aca67621dc40dbb28bae8b79fe18ab189f48"
 }
