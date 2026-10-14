@@ -47,13 +47,33 @@ To verify leakage guards, unit tests, trust engine calibration, baseline models,
 ```bash
 pytest -q
 ```
-*(Expected: 38 passed in ~6.0s, including mandatory headless Streamlit AppTest, single checkpoint SHA-256 verification, and baseline invariance verification).*
+*(Expected: 49 passed in ~6.5s, including mandatory headless Streamlit AppTest, single checkpoint SHA-256 verification, and baseline invariance verification).*
 
 ### 4. Launch the Decision Support Dashboard
 To launch the interactive operational dashboard bound strictly to the clean pipeline outputs:
 ```bash
 streamlit run dashboard/app.py
 ```
+
+---
+
+## Benchmark Datasets & Integrity Manifest
+
+The TrustRisk-WDS framework evaluates strictly on the Battle of the Attack Detection Algorithms (BATADAL) municipal water benchmark.
+
+### Data Sources & Licensing
+- **BATADAL Benchmark**: Taormina et al., *"Battle of the Attack Detection Algorithms: Disclosing Cyber Attacks on Water Distribution Networks"*, ASCE Journal of Water Resources Planning and Management, 2017.
+- **Access / Source**: Open-access academic benchmark (CC BY 4.0 / Public Domain for Research).
+- **Network Model**: `CTOWN.INP` (C-Town hydraulic network model comprising 388 nodes, 432 pipes, 11 pumps, 4 valves, 7 tanks).
+
+### Cryptographic Verification Manifest
+
+| File / Artifact | Role in Protocol | Expected Path | Size (Bytes) | SHA-256 Digest |
+| :--- | :--- | :--- | :---: | :--- |
+| **BATADAL Dataset 03** | Normal baseline training | `data/raw/BATADAL_dataset03.csv` | 2,940,389 | `8ca6cb851242254d2605b5a53ba3ba5009e2213a545d65396615f1ce0b426e1b` |
+| **BATADAL Dataset 04** | Cross-validation & calibration pool | `data/raw/BATADAL_dataset04.csv` | 1,225,392 | `4746beab2cfcdb5e68c7fa197a7522aecb70189d61dcc3eb1f870d2ce387068b` |
+| **BATADAL Test Labeled** | Quarantined test evaluation | `data/raw/BATADAL_test_dataset_labeled.csv` | 407,175 | `38ff66be97496a782ebcac6187ad344b769127254dfbb435c45654a148fa9cb4` |
+| **CTOWN.INP** | EPANET physical network topology | `network/epanet/CTOWN.INP` | 116,999 | `9198b0bb43f551b29bfb550e206ff95f1df220118fc0068c7f130cec78d58d9e` |
 
 ---
 
@@ -75,6 +95,10 @@ streamlit run dashboard/app.py
 
 ```text
 TrustRisk-WDS/
+├── config/
+│   ├── trustrisk.yaml       # Single authoritative configuration (SHA-256 recorded)
+│   ├── loader.py            # Master config loader & run manifest generator
+│   └── __init__.py
 ├── data/
 │   ├── raw/                 # Official BATADAL datasets (Dataset 03, 04, Test Labeled)
 │   └── v2/                  # Strict cross-validation folds and metadata
@@ -104,6 +128,7 @@ TrustRisk-WDS/
 │   ├── risk_validation.md   # WNTR Spearman correlation and Top-10 sensitivity
 │   ├── core_triage_experiment.md  # Headline 5-policy triage comparison table
 │   ├── baseline_comparison.json   # Identical-protocol baseline benchmark data
+│   ├── run_manifest.json    # Cryptographic reproduction manifest
 │   ├── figures/             # 5 publication figures (300 DPI PNG)
 │   └── v3/
 │       ├── test_report.json # Single-shot frozen test report (re-run blocker active)
@@ -115,11 +140,13 @@ TrustRisk-WDS/
 │   ├── ACCEPTANCE_CHECKLIST.md # Formal compliance matrix across all 8 phases & sign-off gate
 │   ├── MANUSCRIPT_REVISION.md  # Comprehensive manuscript text with all 6 tables & citations
 │   └── RELEASE_AND_ZENODO.md   # Archival release guidelines, CRediT roles & Zenodo DOI manifest
-├── tests/                   # Full pytest suite (38 passing tests)
-
+├── scripts/
+│   └── generate_project_tree.py # Automated ASCII tree generator
+├── tests/                   # Full pytest suite (49 passing tests)
 ├── frozen_config.json       # Pre-committed frozen hyperparameters & checkpoint SHA-256
 ├── reproduce_all.py         # Master one-command replication suite
-└── requirements.txt         # Pinned Python dependencies
+├── requirements.txt         # Pinned Python dependencies
+└── requirements.lock        # Exact pip freeze environment lockfile
 ```
 
 ---

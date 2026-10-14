@@ -171,7 +171,52 @@ def print_table_5():
         print("Core triage report not found.")
 
 
+def validate_preflight(cfg, cfg_hash):
+    """Fails loudly on missing inputs, missing models, or checkpoint discrepancies."""
+    for key in ["train_normal_baseline", "train_cross_validation", "test_labeled", "network_inp"]:
+        rel = cfg.get("data", {}).get(key)
+        if not rel:
+            continue
+        p = ROOT / rel
+        if not p.exists() or p.stat().st_size == 0:
+            raise FileNotFoundError(f"FATAL PREFLIGHT ERROR: Required input missing or empty: {p}")
+
+    ckpt_rel = cfg.get("detector", {}).get("checkpoint_file")
+    if ckpt_rel:
+        ckpt_p = ROOT / ckpt_rel
+        if not ckpt_p.exists():
+            raise FileNotFoundError(f"FATAL PREFLIGHT ERROR: Checkpoint file missing: {ckpt_p}")
+        import hashlib
+        with open(ckpt_p, "rb") as f:
+            actual_hash = hashlib.sha256(f.read()).hexdigest()
+        expected_hash = cfg.get("detector", {}).get("checkpoint_sha256")
+        if actual_hash != expected_hash:
+            raise ValueError(f"FATAL PREFLIGHT ERROR: Checkpoint hash mismatch: {actual_hash} != {expected_hash}")
+
+
+def validate_postflight(cfg, cfg_hash):
+    """Fails loudly on missing report fields or config-hash mismatches."""
+    report_jsons = [
+        ROOT / "results" / "v3" / "test_report.json",
+        ROOT / "results" / "v3" / "block_bootstrap_report.json",
+        ROOT / "results" / "baseline_comparison.json",
+        ROOT / "results" / "core_triage_experiment.json",
+    ]
+    for rj in report_jsons:
+        if not rj.exists():
+            raise FileNotFoundError(f"FATAL POSTFLIGHT ERROR: Expected report missing: {rj}")
+        with open(rj, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if data.get("config_sha256") != cfg_hash:
+            raise ValueError(
+                f"FATAL POSTFLIGHT ERROR: Config hash mismatch in {rj.name}: "
+                f"got {data.get('config_sha256')}, expected {cfg_hash}"
+            )
+
+
 def main():
+    import time
+    start_time = time.time()
     from config.loader import get_config_hash, sync_views, generate_run_manifest, load_config
     cfg = load_config()
     cfg_hash = get_config_hash()
@@ -181,7 +226,8 @@ def main():
     print(f">> Authoritative Config: config/trustrisk.yaml (SHA-256: {cfg_hash})")
     print("="*70)
 
-    # 0. Sync derived configuration views from authoritative master config
+    # 0. Preflight validation & Sync derived configuration views
+    validate_preflight(cfg, cfg_hash)
     sync_views(cfg)
     
     # 1. Run Data Card (Phase 1)
@@ -220,7 +266,9 @@ def main():
     # 9. Generate Publication Figures (Phases 3 & 6)
     run_phase_script("experiments/generate_publication_figures.py", "Phases 3 & 6 Publication Figures Generation")
 
-    # 10. Display All Canonical Manuscript Tables
+    # 10. Postflight validation & Display All Canonical Manuscript Tables
+    validate_postflight(cfg, cfg_hash)
+
     print_table_1()
     print_table_2()
     print_table_2d()
@@ -229,8 +277,10 @@ def main():
     print_table_5()
     
     # 11. Generate Run Manifest
+    elapsed = time.time() - start_time
     manifest = generate_run_manifest()
     print(f"\n>> Run Manifest generated at results/run_manifest.json (Commit: {manifest['git_commit']})")
+    print(f">> Total Wall-Clock Reproduction Time: {elapsed:.2f} seconds")
 
     print("\n" + "="*70)
     print(">> REPRODUCTION COMPLETE: ALL TABLES & FIGURES GROUNDED 100% IN DATA")
