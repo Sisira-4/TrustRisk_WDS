@@ -12,16 +12,16 @@ By evaluating incoming detection residuals through a tripartite **Trust-Gating E
 
 ---
 
-## Headline Findings on Official Quarantined BATADAL Test Benchmark
+## Headline Findings on Official Quarantined BATADAL Test Benchmark (2,089 Hours)
 
 1. **100.0% False-Alarm Event Elimination in Action Tier**: Trust-gated triage eliminates all 3 of 3 persistence false alarms (and 4 of 4 raw threshold alarms) from the immediate automated response tier.
-2. **Zero Attack Loss (100% Attack Event Recall)**: All 7 of 7 ground-truth cyber-physical attack events are preserved across action and review tiers (7/7 in immediate action, 0 lost, 0 Action FAs).
+2. **Zero Attack Loss (100% Attack Event Recall)**: All 7 of 7 ground-truth cyber-physical attack events are preserved across action and review tiers (100% event preservation across queues, 0 lost, 0 Action FAs under Policy 4 and 5).
 3. **Transparent Pointwise Evaluation (No Metric Inflation)**:
    - **Pointwise F1**: **0.8368** (official frozen 95% CI: $[0.8083, 0.8659]$; 2,000-replicate i.i.d. sensitivity $[0.8079, 0.8659]$; moving-block bootstrap $[0.7586, 0.9022]$ at 12h, $[0.7015, 0.9241]$ at 48h)
    - **Pointwise Precision & Recall**: Precision **0.9677**, Recall **0.7371** (300 / 407 attack hours detected; 107 attack hours missed during accumulation phases)
    - **Point-Adjusted F1**: **0.9879** (Precision: 0.9760, Recall: 1.0000)
    - **ROC-AUC**: **0.9180** | **PR-AUC**: **0.8684**
-4. **Physical Consequence Grounding**: We demonstrate that graph betweenness centrality alone fails to predict hydraulic consequence ($\rho = -0.1932$), whereas our Cyber-Physical Base Risk strongly correlates with simulated pressure deficits ($\rho = \mathbf{+0.6158}, p = 1.06 \times 10^{-4}$).
+4. **Physical Consequence Grounding**: We demonstrate that graph betweenness centrality alone fails to predict hydraulic consequence ($\rho = +0.0932, p = 0.600$), whereas our Cyber-Physical Base Risk strongly correlates with simulated pressure deficits ($\rho = \mathbf{+0.6752}, p = 1.18 \times 10^{-5}$).
 
 ---
 
@@ -83,10 +83,10 @@ The TrustRisk-WDS framework evaluates strictly on the Battle of the Attack Detec
 | :--- | :--- | :--- | :--- |
 | **Table 1** | **Benchmark Data Card** | `experiments/data_card.py` | Dataset 03 (8,761h normal), Dataset 04 (3,958h `-999` unlabelled, 219h attack), Test (1,682h normal, 407h attack). |
 | **Table 2** | **Frozen Detector Evaluation** | `results/v3/test_report.json` | Pointwise F1 = 0.8368, PA F1 = 0.9879, 7/7 attacks detected, 3 false alarms in 12.4 weeks. |
-| **Table 2d** | **Identical-Protocol Baselines** | `experiments/run_baseline_comparison.py` | Evaluates LSTM-AE ($F_1=0.2306$), LightGBM ($F_1=0.7116$), Physical-GNN ($F_1=0.2214$), vs. Ridge ($F_1=0.8368$). |
-| **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.7%); UQS Error AUROC = 0.5994 (> 0.50, 95% CI: [0.5460, 0.6485]); ERS discriminates attacks (0.9876) vs. false alarms (0.9211). |
-| **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6752$ ($p = 1.18 \times 10^{-5}$); MDCI $\rho = +0.4521$ ($p = 7.27 \times 10^{-3}$); Top-10 Kendall $\tau = 0.9769$; TPPI Pyomo Knapsack ($9$ assets, \$500k). |
-| **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Policy 4 eliminates 100% of Action tier false alarms; preserves 7/7 attacks; mean operational response delay = 7.14h (6.57h under Policy 5). |
+| **Table 2d** | **Identical-Protocol Baselines** | `experiments/run_baseline_comparison.py` | Evaluates LSTM-AE ($F_1=0.2306$), LightGBM ($F_1=0.7116$), Physical-GNN ($F_1=0.2282$), vs. Ridge ($F_1=0.8368$). |
+| **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.5%); UQS Error AUROC = 0.5994 (95% CI: [0.5460, 0.6485]); ERS discriminates attacks (0.9876) vs. false alarms (0.9211). |
+| **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6752$ ($p = 1.18 \times 10^{-5}$); MDCI $\rho = +0.4521$ ($p = 7.27 \times 10^{-3}$); Top-10 Kendall $\tau = 0.9769$; TPPI Pyomo Knapsack ($50k budget, 1 asset; $500k budget, 9 assets). |
+| **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Policy 4 eliminates 100% of Action tier false alarms; preserves 7/7 attacks; mean operational response delay = 11.57h (8.00h under Policy 5). |
 | **Figures 1–5** | **Publication-Grade Visualizations** | `experiments/generate_publication_figures.py` | Data Card timeline (`fig1`), Calibration diagram (`fig2`), UQS/ERS dynamics (`fig3`), WNTR scatter (`fig4`), Triage trade-off (`fig5`). |
 
 ---
@@ -163,4 +163,4 @@ TrustRisk-WDS/
 
 - **Label Integrity**: Unlabelled rows (`-999` in Dataset 04) are strictly quarantined (`LABEL = -999, TRAIN_MASK = 0, EVAL_MASK = 0`) and never assumed normal.
 - **Honest Metric Reporting**: We mandate that pointwise metrics are reported side-by-side with point-adjusted metrics to prevent inflated performance claims.
-- **Operational Delay Transparency**: We transparently document the mean 6.57–7.71h operational response delay (up to 10–11h for low-magnitude stealthy attacks).
+- **Operational Delay Transparency**: We transparently document the mean 8.00–11.57h operational response delay (up to 11.57h for low-magnitude stealthy attacks).

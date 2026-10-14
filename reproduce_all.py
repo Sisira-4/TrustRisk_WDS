@@ -266,7 +266,10 @@ def main():
     # 9. Generate Publication Figures (Phases 3 & 6)
     run_phase_script("experiments/generate_publication_figures.py", "Phases 3 & 6 Publication Figures Generation")
 
-    # 10. Postflight validation & Display All Canonical Manuscript Tables
+    # 10. Generate Manuscript from Live Artifacts (Phase 7)
+    run_phase_script("experiments/generate_manuscript.py", "Phase 7 Dynamic Manuscript Generation")
+
+    # 11. Postflight validation & Display All Canonical Manuscript Tables
     validate_postflight(cfg, cfg_hash)
 
     print_table_1()
