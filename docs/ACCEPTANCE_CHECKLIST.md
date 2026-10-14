@@ -34,7 +34,7 @@
 | **5** | **Exact Code-to-Manuscript Formula Alignment** | **PASSED** | All mathematical formulas ($PCS, UQS, ERS, TS, ATI, TDCRI, TPPI$) in [`docs/MANUSCRIPT_REVISION.md`](file:///c:/Users/shino/Desktop/Project/docs/MANUSCRIPT_REVISION.md) match the source implementations in `models/trust/` and `risk/` to the exact character. |
 | **6** | **Phase 5 Headline Table Quoted in Abstract** | **PASSED** | Table 5 5-policy matrix in [`results/core_triage_experiment.json`](file:///c:/Users/shino/Desktop/Project/results/core_triage_experiment.json) is quoted verbatim in the manuscript abstract, introduction, and conclusion. |
 | **7** | **Dual Metric Reporting Without Test Snooping** | **PASSED** | Pointwise F1 (**0.8368**, 95% CI: $[0.8083, 0.8659]$) and Point-Adjusted F1 (**0.9879**) are reported side-by-side in Table 2; threshold was frozen strictly on the validation pool ($q=99.0$). |
-| **8** | **Negative Findings Reported Honestly** | **PASSED** | Negative findings explicitly documented: failure of pure topological centrality ($\rho = -0.1932$), 107 missed attack hours during stealth phases (73.71% pointwise recall), and operational verification delay (7.71h Policy 4, 6.57h Policy 5). |
+| **8** | **Negative Findings Reported Honestly** | **PASSED** | Negative findings explicitly documented: failure of pure topological centrality ($\rho = -0.1932$), 107 missed attack hours during stealth phases (73.71% pointwise recall), and operational verification delay (7.14h Policy 4, 6.57h Policy 5). |
 | **9** | **Zero Unsupported Claims Across Repository** | **PASSED** | Every reported metric, correlation coefficient, and triage count traces directly to an existing JSON or CSV artifact produced by `reproduce_all.py`. |
 
 ---

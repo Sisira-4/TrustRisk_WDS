@@ -85,7 +85,7 @@ The TrustRisk-WDS framework evaluates strictly on the Battle of the Attack Detec
 | **Table 2** | **Frozen Detector Evaluation** | `results/v3/test_report.json` | Pointwise F1 = 0.8368, PA F1 = 0.9879, 7/7 attacks detected, 3 false alarms in 12.4 weeks. |
 | **Table 2d** | **Identical-Protocol Baselines** | `experiments/run_baseline_comparison.py` | Evaluates LSTM-AE ($F_1=0.2306$), LightGBM ($F_1=0.7116$), Physical-GNN ($F_1=0.2214$), vs. Ridge ($F_1=0.8368$). |
 | **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.7%); UQS Error AUROC = 0.5786 (> 0.50); ERS drops on false alarms. |
-| **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6158$ ($p = 1.06 \times 10^{-4}$); Top-10 Kendall $\tau = 1.0000$; TPPI Knapsack ($11$ assets, \$480k). |
+| **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6752$ ($p = 1.18 \times 10^{-5}$); MDCI $\rho = +0.4521$ ($p = 7.27 \times 10^{-3}$); Top-10 Kendall $\tau = 0.9769$; TPPI Pyomo Knapsack ($9$ assets, \$500k). |
 | **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Policy 4 eliminates 100% of Action tier false alarms; preserves 7/7 attacks; mean operational response delay = 7.14h (6.57h under Policy 5). |
 | **Figures 1–5** | **Publication-Grade Visualizations** | `experiments/generate_publication_figures.py` | Data Card timeline (`fig1`), Calibration diagram (`fig2`), UQS/ERS dynamics (`fig3`), WNTR scatter (`fig4`), Triage trade-off (`fig5`). |
 
@@ -113,7 +113,12 @@ TrustRisk-WDS/
 │       ├── unified_trust_engine.py  # Canonical trust scoring & calibration
 │       └── policy5_router.py        # Shared Policy 5 triage decision router
 ├── risk/
-│   └── hydraulic_simulation.py  # WNTR EPANET hydraulic outage engine & TPPI Knapsack
+│   ├── hydraulic_simulation.py  # WNTR EPANET hydraulic outage engine with convergence logging
+│   ├── asset_criticality.py     # Multi-Dimensional Criticality Index (MDCI across 4 dimensions)
+│   ├── attack_susceptibility.py # Attack Susceptibility Score (ASS across 5 factors)
+│   ├── asset_resilience.py      # Asset Resilience Score (ARS across 4 factors)
+│   ├── tdcri.py                 # Threat-Driven Cyber-Physical Risk Index & Kendall tau stability
+│   └── tppi.py                  # Pyomo 0/1 Knapsack optimization with HiGHS & DP cross-validation
 ├── experiments/
 │   ├── data_card.py         # Data Card & label semantics verification
 │   ├── run_trust_calibration.py  # Phase 3 calibration & UQS/ERS validation
@@ -126,6 +131,7 @@ TrustRisk-WDS/
 │   ├── frozen_detector_test_report.md  # Single-shot frozen test evaluation report
 │   ├── calibration_report.md  # ECE, Brier, NLL, and UQS discriminative validity
 │   ├── risk_validation.md   # WNTR Spearman correlation and Top-10 sensitivity
+│   ├── risk_invalid_assets.csv # Log of any unconverged/failed hydraulic simulations
 │   ├── core_triage_experiment.md  # Headline 5-policy triage comparison table
 │   ├── baseline_comparison.json   # Identical-protocol baseline benchmark data
 │   ├── run_manifest.json    # Cryptographic reproduction manifest
@@ -142,7 +148,7 @@ TrustRisk-WDS/
 │   └── RELEASE_AND_ZENODO.md   # Archival release guidelines, CRediT roles & Zenodo DOI manifest
 ├── scripts/
 │   └── generate_project_tree.py # Automated ASCII tree generator
-├── tests/                   # Full pytest suite (49 passing tests)
+├── tests/                   # Full pytest suite (71 passing tests)
 ├── frozen_config.json       # Pre-committed frozen hyperparameters & checkpoint SHA-256
 ├── reproduce_all.py         # Master one-command replication suite
 ├── requirements.txt         # Pinned Python dependencies
