@@ -52,3 +52,12 @@ Per Section 3 of the Master Prompt, all ten proposal modules are accounted for b
 | 8 | **ERS** | Explanation Reliability Score | Exact Linear SHAP Attribution Stability over observed sensors | **Fully Implemented** | `models/trust/explanation_reliability.py` |
 | 9 | **TS / ATI** | Unified Trust Score & Action Triage Index | Canonical 4-term formula ($w_1..w_4$) with causal Historical Reliability (HRS) | **Fully Implemented** | `models/trust/unified_trust_engine.py` |
 | 10 | **TPPI** | Target Protection Priority Index | 0/1 Integer Knapsack formulated in Pyomo and solved via HiGHS | **Fully Implemented** | `risk/tppi.py` |
+
+---
+
+## 3. Evaluation Scope: Single-Dataset Primary Focus & Second Dataset as Future Work (Phase D4)
+
+Per Section D4 of the Master Prompt ("*Optional second dataset (WNTR-simulated attacks on C-Town, or WADI): implement only if time permits; otherwise list as future work*"):
+1. **Primary Experimental Focus**: The comprehensive, clean-room evaluation is conducted on the official BATADAL benchmark (Dataset 03 normal baseline, Dataset 04 validation and tuning data with quarantined $\pm$48h margins, and the official 2,089-hour test set with 7 ground-truth attack scenarios).
+2. **Designation as Future Work**: Evaluating the TrustRisk-WDS framework across alternative cyber-physical water systems (such as WADI or systematically synthesized WNTR pressure-manipulation suites) is formally scoped as immediate Future Work in Section 6 of the manuscript.
+

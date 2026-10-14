@@ -1,5 +1,5 @@
 {
-  "config_sha256": "9ed8a7fabc9111fcced46a747e69aca67621dc40dbb28bae8b79fe18ab189f48",
+  "config_sha256": "d02b01ab278ca5c7f63cead2467f72bb6858c490c9b309491c7173bbae26b213",
   "validation": {
     "ece_before": 0.019772759412762957,
     "ece_after": 0.005236570488978755,

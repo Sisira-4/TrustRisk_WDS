@@ -196,6 +196,25 @@ costs:
       description: "Pressure transducer cryptographic signing tap"
 
 # ------------------------------------------------------------------------------
+# Phase 5: Controlled Alert Triage Policies (Policies 1-5, Operational Definitions, Out-of-Fold Tuning)
+# ------------------------------------------------------------------------------
+triage:
+  definitions:
+    unnecessary_response: "false_alarm_event_reaching_action"
+    missed_response: "attack_event_reaching_neither_action_nor_review"
+  policy_5_routing:
+    validation_source: "BATADAL_dataset04_out_of_fold"
+    standard_action_ts: 0.80
+    standard_action_r_phys: 0.35
+    fast_path_ts: 0.75
+    fast_path_r_phys: 0.55
+    review_ts: 0.50
+  bootstrap:
+    n_replications: 2000
+    seed: 42
+    confidence_level: 0.95
+
+# ------------------------------------------------------------------------------
 # Artifact Output Paths
 # ------------------------------------------------------------------------------
 paths:

@@ -47,5 +47,5 @@
     }
   },
   "methodological_safeguard": "Reported as sensitivity analysis alongside i.i.d. bootstrap; does not replace frozen test protocol.",
-  "config_sha256": "9ed8a7fabc9111fcced46a747e69aca67621dc40dbb28bae8b79fe18ab189f48"
+  "config_sha256": "d02b01ab278ca5c7f63cead2467f72bb6858c490c9b309491c7173bbae26b213"
 }

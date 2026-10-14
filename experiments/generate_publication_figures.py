@@ -179,9 +179,17 @@ def plot_fig4_hydraulic_risk():
 def plot_fig5_triage_tradeoff():
     fig, ax1 = plt.subplots(figsize=(8.0, 4.0))
     
-    policies = ["P1: Raw\nThreshold", "P2: Temporal\nPersistence", "P3: Confidence\nGate", "P4: Full\nTrust Gate", "P5: Trust +\nRisk Gate"]
-    fa_action = [4, 3, 0, 0, 0]
-    delays = [1.57, 4.86, 6.57, 7.71, 6.57]
+    triage_json_path = RESULTS_DIR / "core_triage_experiment.json"
+    if triage_json_path.exists():
+        with open(triage_json_path, "r", encoding="utf-8") as f:
+            triage_data = json.load(f)
+        policies = ["P1: Raw\nThreshold", "P2: Temporal\nPersistence", "P3: Confidence\nGate", "P4: Full\nTrust Gate", "P5: Trust +\nRisk Gate"]
+        fa_action = [p["unnecessary_responses"] for p in triage_data["headline_policies"]]
+        delays = [float(p["mean_delay_hours"]) for p in triage_data["headline_policies"]]
+    else:
+        policies = ["P1: Raw\nThreshold", "P2: Temporal\nPersistence", "P3: Confidence\nGate", "P4: Full\nTrust Gate", "P5: Trust +\nRisk Gate"]
+        fa_action = [4, 3, 0, 0, 0]
+        delays = [1.57, 4.86, 6.57, 11.57, 8.00]
     
     x = np.arange(len(policies))
     width = 0.38
@@ -198,7 +206,7 @@ def plot_fig5_triage_tradeoff():
     line1 = ax2.plot(x + width/2, delays, "o-", color=color_line, linewidth=2.2, markersize=7, label="Mean Response Delay (h)")
     ax2.set_ylabel("Mean Operational Response Delay (Hours)", color=color_line, fontweight="bold")
     ax2.tick_params(axis="y", labelcolor=color_line)
-    ax2.set_ylim(0, 10.0)
+    ax2.set_ylim(0, 15.0)
     
     ax1.set_xticks(x)
     ax1.set_xticklabels(policies, fontweight="bold")
