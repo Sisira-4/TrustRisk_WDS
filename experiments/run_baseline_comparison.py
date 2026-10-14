@@ -15,9 +15,25 @@ import json
 import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
-from lightgbm import LGBMRegressor
+try:
+    from lightgbm import LGBMRegressor
+except ImportError:
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    class LGBMRegressor:
+        """Fallback to scikit-learn HistGradientBoostingRegressor if lightgbm is absent."""
+        def __init__(self, n_estimators=30, max_depth=3, random_state=42, verbose=-1, n_jobs=1):
+            self.model = HistGradientBoostingRegressor(
+                max_iter=n_estimators, max_depth=max_depth, random_state=random_state
+            )
+        def fit(self, X, y):
+            self.model.fit(X, y)
+            return self
+        def predict(self, X):
+            return self.model.predict(X)
+
 import torch
 import torch.nn as nn
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"

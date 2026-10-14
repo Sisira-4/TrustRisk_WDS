@@ -11,29 +11,32 @@ from pathlib import Path
 import json
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")  # Non-interactive headless backend
-import matplotlib.pyplot as plt
+try:
+    import matplotlib
+    matplotlib.use("Agg")  # Non-interactive headless backend
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_AVAILABLE = True
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.size": 10,
+        "axes.labelsize": 11,
+        "axes.titlesize": 12,
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "legend.fontsize": 9,
+        "figure.titlesize": 13,
+        "figure.dpi": 300,
+        "savefig.dpi": 300,
+        "savefig.bbox": "tight"
+    })
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "results"
 FIG_DIR = RESULTS_DIR / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-# Styling defaults
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.size": 10,
-    "axes.labelsize": 11,
-    "axes.titlesize": 12,
-    "xtick.labelsize": 9,
-    "ytick.labelsize": 9,
-    "legend.fontsize": 9,
-    "figure.titlesize": 13,
-    "figure.dpi": 300,
-    "savefig.dpi": 300,
-    "savefig.bbox": "tight"
-})
 
 
 def plot_fig1_data_card():
@@ -225,12 +228,16 @@ def main():
     print("=" * 70)
     print("   GENERATING PUBLICATION-GRADE FIGURES (PHASES 3 & 6)")
     print("=" * 70)
+    if not MATPLOTLIB_AVAILABLE:
+        print(">> Matplotlib not available; skipping figure generation.")
+        return
     plot_fig1_data_card()
     plot_fig2_calibration()
     plot_fig3_uqs_ers()
     plot_fig4_hydraulic_risk()
     plot_fig5_triage_tradeoff()
     print(f">> All 5 publication figures successfully written to {FIG_DIR}")
+
 
 
 if __name__ == "__main__":
