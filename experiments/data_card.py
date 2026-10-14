@@ -82,7 +82,13 @@ def main():
 
     out_file = OUT_DIR / "data_card.md"
     out_file.write_text(md_content, encoding="utf-8")
-    print(f"Generated data card at {out_file}:\n")
+    
+    import json
+    out_json = OUT_DIR / "data_card.json"
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+
+    print(f"Generated data card at {out_file} and {out_json}:\n")
     print(card_df.to_string(index=False))
 
 

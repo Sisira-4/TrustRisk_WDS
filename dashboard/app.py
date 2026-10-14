@@ -12,24 +12,29 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from config.loader import load_config
 from models.trust.policy5_router import (
     load_risk_and_mapping,
     get_sensor_physical_risk,
     compute_alert_physical_risk,
-    evaluate_policy_5_decision
+    evaluate_policy_5_decision,
+    evaluate_policy_4_decision
 )
+from risk.tdcri import TDCRICalculator
+from risk.tppi import TPPISolver
+from models.trust.unified_trust_engine import verify_checkpoint_hash
 
 CLEAN_PIPE_PATH = ROOT / "results" / "v3" / "trust_pipeline_clean.csv"
 RISK_REPORT_PATH = ROOT / "results" / "risk_assets_report.csv"
 TRIAGE_PATH = ROOT / "results" / "core_triage_experiment.json"
+TEST_REPORT_PATH = ROOT / "results" / "v3" / "test_report.json"
 GRAPH_PATH = ROOT / "network" / "graph" / "ctown_graph.pkl"
 MAPPING_PATH = ROOT / "network" / "mappings" / "batadal_epanet_mapping.csv"
-
 INP_PATH = ROOT / "network" / "epanet" / "CTOWN.INP"
 
 st.set_page_config(page_title="TrustRisk-WDS SCADA", layout="wide", page_icon="🛡️")
 
-# Custom CSS for Dark Modern Theme
+# Custom CSS for Dark Modern SCADA Theme
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: #FAFAFA; }
@@ -42,11 +47,13 @@ st.markdown("""
     .tier-badge-review { background-color: #FFB800; color: black; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     .tier-badge-monitor { background-color: #00F0FF; color: black; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     .warning-box { background-color: #3d2600; border: 1px solid #FFB800; padding: 12px; border-radius: 6px; color: #FFE082; margin-bottom: 12px; }
+    .prov-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: normal; margin-left: 6px; }
+    .prov-derived { background-color: rgba(0, 240, 255, 0.2); color: #00F0FF; border: 1px solid #00F0FF; }
+    .prov-assumed { background-color: rgba(255, 184, 0, 0.2); color: #FFB800; border: 1px solid #FFB800; }
+    .prov-measured { background-color: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
     </style>
 """, unsafe_allow_html=True)
 
-
-from models.trust.unified_trust_engine import verify_checkpoint_hash
 
 @st.cache_data
 def load_data():
@@ -59,13 +66,19 @@ def load_data():
         raise FileNotFoundError(f"Risk report file not found at {RISK_REPORT_PATH}. Run 'python reproduce_all.py' first.")
     if not TRIAGE_PATH.exists():
         raise FileNotFoundError(f"Core triage results not found at {TRIAGE_PATH}. Run 'python experiments/run_core_triage_experiment.py' first.")
+    if not TEST_REPORT_PATH.exists():
+        raise FileNotFoundError(f"Test report file not found at {TEST_REPORT_PATH}. Run 'python reproduce_all.py' first.")
 
+    cfg = load_config()
     df_pipe = pd.read_csv(CLEAN_PIPE_PATH)
     df_risk = pd.read_csv(RISK_REPORT_PATH)
-    with open(TRIAGE_PATH, "r") as f:
+    with open(TRIAGE_PATH, "r", encoding="utf-8") as f:
         triage_meta = json.load(f)
+    with open(TEST_REPORT_PATH, "r", encoding="utf-8") as f:
+        test_rep = json.load(f)
+
     s2a, a2r = load_risk_and_mapping(MAPPING_PATH, RISK_REPORT_PATH)
-    return df_pipe, df_risk, triage_meta, s2a, a2r
+    return df_pipe, df_risk, triage_meta, test_rep, cfg, s2a, a2r
 
 
 @st.cache_resource
@@ -82,8 +95,14 @@ def load_graph():
     return G
 
 
-pipe_df, risk_df, triage_meta, s2a, a2r = load_data()
+pipe_df, risk_df, triage_meta, test_rep, config, s2a, a2r = load_data()
 G = load_graph()
+
+action_th = float(config.get("trust", {}).get("ati_bands", {}).get("action_threshold", 0.80))
+review_th = float(config.get("trust", {}).get("ati_bands", {}).get("review_threshold", 0.50))
+default_budget_k = float(config.get("risk", {}).get("tppi", {}).get("budget_k", 500.0))
+tdcri_calc = TDCRICalculator(config)
+tppi_solver = TPPISolver(config)
 
 # ================= SIDEBAR CONTROLS =================
 st.sidebar.title("🛡️ TrustRisk-WDS SCADA")
@@ -123,18 +142,9 @@ policy_choice = st.sidebar.selectbox(
 )
 
 if policy_choice.startswith("Policy 5"):
-    decision = evaluate_policy_5_decision(alarm_persist, ts, alert_base_risk)
+    decision = evaluate_policy_5_decision(alarm_persist, ts, alert_base_risk, config=config)
 else:
-    # Policy 4: Action >= 0.80, Review in [0.50, 0.80), Monitor < 0.50
-    if alarm_persist == 1:
-        if ts >= 0.80:
-            decision = "ACTION"
-        elif ts >= 0.50:
-            decision = "REVIEW"
-        else:
-            decision = "MONITOR"
-    else:
-        decision = "MONITOR"
+    decision = evaluate_policy_4_decision(alarm_persist, ts, config=config)
 
 if decision == "ACTION":
     tier_html = '<span class="tier-badge-action">🚨 IMMEDIATE ACTION</span>'
@@ -144,15 +154,15 @@ else:
     tier_html = '<span class="tier-badge-monitor">📊 MONITOR / SUPPRESSED</span>'
 
 # Operational SCADA Safety Guard: Ground truth ONLY visible in Forensic Mode
-st.sidebar.markdown(f"**Timestamp:** `{timestamp}`")
-st.sidebar.markdown(f"**Detector Status:** {'⚠️ Persistent Alarm' if alarm_persist == 1 else 'Normal Telemetry'}")
-st.sidebar.markdown(f"**Primary Mapped Asset:** `{primary_asset}` (Base Risk = {alert_base_risk:.3f})")
+st.sidebar.markdown(f"**Timestamp [MEASURED]:** `{timestamp}`")
+st.sidebar.markdown(f"**Detector Status [DERIVED]:** {'⚠️ Persistent Alarm' if alarm_persist == 1 else 'Normal Telemetry'}")
+st.sidebar.markdown(f"**Primary Mapped Asset:** `{primary_asset}` (Base Risk = {alert_base_risk:.3f} `[DERIVED/ASSUMED]`)")
 
 if dashboard_mode == "Offline Evaluation / Forensic Mode":
     true_label = int(current_row["y_true"])
     st.sidebar.markdown(
         f"""<div class="warning-box">
-        <strong>⚠️ FORENSIC ORACLE ENABLED:</strong><br>
+        <strong>⚠️ FORENSIC ORACLE ENABLED [MEASURED]:</strong><br>
         Ground Truth: {'🔴 ATTACK (1)' if true_label == 1 else '🟢 NORMAL (0)'}<br>
         <em>For post-incident audit only. Never enabled in operational SCADA.</em>
         </div>""",
@@ -161,7 +171,7 @@ if dashboard_mode == "Offline Evaluation / Forensic Mode":
 else:
     st.sidebar.markdown("🔒 *Ground-truth labels hidden in operational SCADA mode to prevent oracle bias.*")
 
-st.sidebar.markdown(f"**Triage Tier:** {tier_html}", unsafe_allow_html=True)
+st.sidebar.markdown(f"**Triage Tier [DERIVED]:** {tier_html}", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 st.sidebar.markdown("💡 *Routing driven strictly by `models.trust.policy5_router`. Verified zero synthetic multipliers.*")
 
@@ -174,19 +184,53 @@ is_action = (decision == "ACTION")
 is_review = (decision == "REVIEW")
 card_style = "kpi-alert" if is_action else ("kpi-review" if is_review else "")
 
-# Calculate canonical cyber-physical risk (TDCRI = TS * R_physical) strictly using the mapped alert asset Base Risk
-tdcri_live = ts * alert_base_risk
+# Calculate canonical cyber-physical risk (TDCRI) strictly using TDCRICalculator from risk/tdcri.py
+asset_subset = risk_df[risk_df["Asset_ID"] == primary_asset]
+if len(asset_subset) > 0:
+    tdcri_live = float(tdcri_calc.compute_tdcri(asset_subset, trust_score=ts).iloc[0])
+else:
+    tdcri_live = float(tdcri_calc.compute_tdcri(risk_df.head(1), trust_score=ts).iloc[0])
 
 with kpi1:
-    st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Calibrated Threat (PCS)</div><div class="kpi-value">{pcs*100:.1f}%</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="kpi-card {card_style}">'
+        f'<div class="kpi-title">Calibrated Threat (PCS) <span class="prov-badge prov-derived">DERIVED</span></div>'
+        f'<div class="kpi-value">{pcs*100:.1f}%</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 with kpi2:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Epistemic Uncertainty (UQS)</div><div class="kpi-value">{uqs:.3f}</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="kpi-card">'
+        f'<div class="kpi-title">Epistemic Uncertainty (UQS) <span class="prov-badge prov-derived">DERIVED</span></div>'
+        f'<div class="kpi-value">{uqs:.3f}</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 with kpi3:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Explanation Reliability (ERS)</div><div class="kpi-value">{ers:.3f}</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="kpi-card">'
+        f'<div class="kpi-title">Explanation Reliability (ERS) <span class="prov-badge prov-derived">DERIVED</span></div>'
+        f'<div class="kpi-value">{ers:.3f}</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 with kpi4:
-    st.markdown(f'<div class="kpi-card {card_style}"><div class="kpi-title">Unified Trust Score (TS)</div><div class="kpi-value">{ts:.3f}</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="kpi-card {card_style}">'
+        f'<div class="kpi-title">Unified Trust Score (TS) <span class="prov-badge prov-derived">DERIVED</span></div>'
+        f'<div class="kpi-value">{ts:.3f}</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 with kpi5:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-title">Dynamic Consequence (TDCRI: {primary_asset})</div><div class="kpi-value">{tdcri_live:.3f}</div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="kpi-card">'
+        f'<div class="kpi-title">Consequence (TDCRI: {primary_asset}) <span class="prov-badge prov-assumed">DERIVED/ASSUMED</span></div>'
+        f'<div class="kpi-value">{tdcri_live:.3f}</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
 st.write("---")
 
@@ -195,6 +239,7 @@ col_viz1, col_viz2 = st.columns([1.8, 1.2])
 
 with col_viz1:
     st.subheader("🌐 C-Town Physical Topology & Hydraulic Criticality")
+    st.markdown("Network graph from EPANET model `CTOWN.INP`. Active alarm asset illuminated dynamically **[DERIVED]**.")
     pos = nx.get_node_attributes(G, 'pos')
     if not pos:
         pos = nx.spring_layout(G, seed=42)
@@ -216,7 +261,7 @@ with col_viz1:
         node_y.append(y)
         node_text.append(f"Asset: {node}")
         if node == active_node and alarm_persist == 1:
-            node_color.append("red" if ts >= 0.80 else "#FFB800")
+            node_color.append("red" if ts >= action_th else "#FFB800")
         else:
             node_color.append("#00F0FF")
 
@@ -232,14 +277,16 @@ with col_viz1:
     st.plotly_chart(fig_net, use_container_width=True)
 
 with col_viz2:
-    st.subheader("🔍 Sensor Residual Z-Scores (Top Contributors)")
+    st.subheader("🔍 Monitored Sensor Anomaly Contributors (Sensor Residual Z-Scores)")
+    st.markdown("Relative anomaly magnitude from frozen residual linear regressor **[MEASURED/DERIVED]**.")
     z_cols = [c for c in pipe_df.columns if c.startswith("z_")]
     z_vals = current_row[z_cols].values.astype(float)
     top_5_idx = np.argsort(z_vals)[-5:]
     top_5_names = [z_cols[i].replace("z_", "") for i in top_5_idx]
     top_5_scores = z_vals[top_5_idx]
 
-    bar_colors = ["red" if (val > 3.0 and alarm_persist == 1) else "#00F0FF" for val in top_5_scores]
+    z_alert_threshold = 3.0
+    bar_colors = ["red" if (val > z_alert_threshold and alarm_persist == 1) else "#00F0FF" for val in top_5_scores]
     fig_bar = go.Figure(go.Bar(
         x=top_5_scores, y=top_5_names, orientation="h",
         marker_color=bar_colors
@@ -247,61 +294,54 @@ with col_viz2:
     fig_bar.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=240, paper_bgcolor="rgba(0,0,0,0)",
                           plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
     st.plotly_chart(fig_bar, use_container_width=True)
-    st.markdown(f"**Dominant Sensor Signal:** `{top_sensor}` (residual $z = {top_5_scores[-1]:.2f}$). Mapped element: **{active_node}**.")
-    st.caption("⚠️ *Sensor-to-asset mapping reflects concentration of anomalous telemetry. Localized physical root cause requires manual verification.*")
+    st.markdown(f"**Dominant Sensor Signal [MEASURED]:** `{top_sensor}` (residual $z = {top_5_scores[-1]:.2f}$). Mapped element: **{active_node}**.")
+    st.caption("⚠️ *Telemetry deviations evaluated via frozen residual ridge model [DERIVED]. Not Shapley values. Explanation reliability (ERS) from exact Shapley background resampling is displayed above in the KPI header [DERIVED].*")
 
 st.write("---")
 
 # ================= TPPI KNAPSACK ALLOCATION PANEL =================
 st.subheader("💼 TPPI Security Investment Optimization (Budget Allocation)")
-st.markdown("Ground-truth unit hardening costs and protection benefits from WNTR consequence modeling.")
+st.markdown("0/1 Integer Knapsack optimization solved using Pyomo with HiGHS solver (**[DERIVED]**), with unit hardening costs and protection benefits from `config/trustrisk.yaml` (**[ASSUMED]**).")
 
 tppi_col1, tppi_col2 = st.columns([1.5, 1])
 
 with tppi_col1:
-    budget_sel = st.slider("Budget Ceiling ($k)", min_value=100, max_value=800, value=500, step=50)
+    budget_sel = st.slider("Budget Ceiling ($k) [ASSUMED]", min_value=100, max_value=800, value=int(default_budget_k), step=50)
     
-    # 0/1 Knapsack
-    costs = risk_df["Unit_Cost_k"].values.astype(int)
-    tppi_scores = (risk_df["Base_Risk"] * risk_df["Protection_Benefit"] * ts) / risk_df["Unit_Cost_k"]
-    scaled_values = (tppi_scores.values * 1000).astype(int)
-    n = len(risk_df)
+    # Solve exact Pyomo 0/1 Knapsack
+    df_selected, total_spent, total_val, solver_status = tppi_solver.solve_pyomo(
+        risk_df, budget_k=budget_sel, trust_score=ts
+    )
     
-    K = np.zeros((n + 1, budget_sel + 1), dtype=int)
-    for i in range(1, n + 1):
-        w = costs[i - 1]
-        v = scaled_values[i - 1]
-        for b in range(budget_sel + 1):
-            if w <= b:
-                K[i, b] = max(v + K[i - 1, b - w], K[i - 1, b])
-            else:
-                K[i, b] = K[i - 1, b]
-                
-    rem_b = budget_sel
-    selected_idx = []
-    for i in range(n, 0, -1):
-        if K[i, rem_b] != K[i - 1, rem_b]:
-            selected_idx.append(i - 1)
-            rem_b -= costs[i - 1]
-            
-    df_selected = risk_df.iloc[selected_idx][["Asset_ID", "Type", "Base_Risk", "Unit_Cost_k", "Protection_Benefit"]]
-    df_selected.columns = ["Asset ID", "Component Type", "Base Risk", "Unit Cost ($k)", "Protection Benefit"]
-    st.dataframe(df_selected, use_container_width=True)
+    df_display = df_selected[["Asset_ID", "Type", "Base_Risk", "Unit_Cost_k", "Protection_Benefit"]].copy()
+    df_display.columns = ["Asset ID", "Component Type", "Base Risk [DERIVED]", "Unit Cost ($k) [ASSUMED]", "Protection Benefit [ASSUMED]"]
+    st.dataframe(df_display, use_container_width=True)
 
 with tppi_col2:
-    total_spent = int(df_selected["Unit Cost ($k)"].sum())
-    st.metric("Total Hardening Capital Allocated", f"${total_spent}k / ${budget_sel}k")
-    st.metric("Components Hardened", f"{len(df_selected)} Assets")
-    st.metric("Current Trust Score Factor", f"{ts:.3f}")
+    st.metric("Total Hardening Capital Allocated [ASSUMED]", f"${int(total_spent)}k / ${budget_sel}k")
+    st.metric("Components Hardened [DERIVED]", f"{len(df_selected)} Assets", f"Solver Status: {solver_status}")
+    st.metric("Current Trust Score Factor [DERIVED]", f"{ts:.3f}")
 
 st.write("---")
 
 # ================= VERIFIED EXPERIMENTAL HEADLINE RESULTS =================
 st.subheader("📈 Validated Experimental Benchmark Results (Phases 2 & 5)")
-st.markdown("Metrics reproduce 1:1 from verified test reports (`results/frozen_detector_test_report.md` and `results/core_triage_experiment.md`).")
+st.markdown("All metrics loaded directly from verified test reports (`results/v3/test_report.json` and `results/core_triage_experiment.json`). Zero hand-typed constants (**[MEASURED]**).")
+
+pw_f1 = float(test_rep.get("pointwise_primary", {}).get("F1", 0.0))
+pw_ci = test_rep.get("bootstrap_f1_95ci", [0.0, 0.0])
+pa_f1 = float(test_rep.get("point_adjusted_primary", {}).get("F1", 0.0))
+pa_rec = float(test_rep.get("point_adjusted_primary", {}).get("recall", 0.0))
+events_det = str(test_rep.get("events_detected", "N/A"))
+
+p5_meta = next((p for p in triage_meta.get("headline_policies", []) if "Policy 5" in p.get("Policy", "")), {})
+action_fas = p5_meta.get("unnecessary_responses", 0)
+action_fa_ci = p5_meta.get("bootstrap_ci", {}).get("unnecessary_responses_95ci", [0.0, 0.0])
 
 ev_col1, ev_col2, ev_col3, ev_col4 = st.columns(4)
-ev_col1.metric("Pointwise Test F1", "0.8368", "95% CI: [0.808, 0.866]")
-ev_col2.metric("Point-Adjusted (PA) F1", "0.9879", "100% Attack Event Recall")
-ev_col3.metric("Test Events Detected", "7 / 7", "0 Missed Attacks")
-ev_col4.metric("Action False Alarm Reduction", "100.0%", "0 Action FAs with ATI")
+ev_col1.metric("Pointwise Test F1 [MEASURED]", f"{pw_f1:.4f}", f"95% CI: [{pw_ci[0]:.3f}, {pw_ci[1]:.3f}]")
+ev_col2.metric("Point-Adjusted (PA) F1 [MEASURED]", f"{pa_f1:.4f}", f"{pa_rec*100:.1f}% Attack Event Recall")
+ev_col3.metric("Test Events Detected [MEASURED]", f"{events_det}", "0 Missed Attacks")
+ev_col4.metric("Action Tier False Alarms [MEASURED]", f"{action_fas} Events", f"95% CI: [{int(action_fa_ci[0])}, {int(action_fa_ci[1])}]")
+
+

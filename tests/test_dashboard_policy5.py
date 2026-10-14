@@ -93,3 +93,52 @@ def test_block_bootstrap_report_integrity():
     ci12 = blocks["12h_blocks"]["ci_95"]
     ci48 = blocks["48h_blocks"]["ci_95"]
     assert (ci48[1] - ci48[0]) > (ci12[1] - ci12[0])
+
+
+def test_no_hardcoded_numeric_risk_literals_in_dashboard():
+    """Asserts dashboard/app.py contains zero hardcoded numeric risk literals or test metrics (Phase E1)."""
+    app_path = ROOT / "dashboard" / "app.py"
+    content = app_path.read_text(encoding="utf-8")
+    
+    # 1. Assert no 0.95 actuator multiplier
+    assert "0.95" not in content, "Found prohibited 0.95 actuator constant in dashboard/app.py"
+    
+    # 2. Assert no hard-coded experimental test metric strings
+    forbidden_metric_strings = ["0.8368", "0.9879", "100.0%", "7 / 7", "0.9677", "0.7371"]
+    for s in forbidden_metric_strings:
+        assert f'"{s}"' not in content and f"'{s}'" not in content, (
+            f"Found hard-coded experimental metric string '{s}' in dashboard/app.py; must load from test_report.json / core_triage_experiment.json"
+        )
+        
+    # 3. Assert no hardcoded knapsack table or inline knapsack recomputation
+    assert "K = np.zeros" not in content, "Found inline dynamic programming knapsack in dashboard/app.py; must use TPPISolver"
+    assert "tppi_scores = " not in content, "Found duplicated inline tppi score calculation; must use TPPISolver"
+    
+    # 4. Assert canonical TDCRI calculator is imported and used
+    assert "TDCRICalculator" in content, "Dashboard must use canonical TDCRICalculator"
+    assert "TPPISolver" in content, "Dashboard must use canonical TPPISolver"
+    assert "load_config" in content, "Dashboard must load parameters from authoritative config"
+
+
+def test_dashboard_provenance_labels_rendered():
+    """Verifies that all displayed metrics in dashboard/app.py have explicit provenance labels (Phase E1)."""
+    from streamlit.testing.v1 import AppTest
+    app_path = ROOT / "dashboard" / "app.py"
+    at = AppTest.from_file(str(app_path))
+    at.run()
+    assert len(at.exception) == 0, f"Dashboard threw unhandled exceptions: {at.exception}"
+    
+    all_markdown = " ".join([m.value for m in at.markdown])
+    assert "DERIVED" in all_markdown
+    assert "ASSUMED" in all_markdown
+    assert "MEASURED" in all_markdown
+    
+    # Check that KPI cards have provenance badges
+    assert "prov-badge" in all_markdown
+    assert "prov-derived" in all_markdown
+    
+    # Check that headline metrics have MEASURED labels
+    metric_labels = " ".join([m.label for m in at.metric])
+    assert "[MEASURED]" in metric_labels
+    assert "[ASSUMED]" in metric_labels or "[DERIVED]" in metric_labels
+

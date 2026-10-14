@@ -73,33 +73,56 @@ def compute_alert_physical_risk(
     return best_asset, max_risk
 
 
+from config.loader import load_config
+
+
 def evaluate_policy_5_decision(
     alarm_persist: int,
     ts: float,
-    r_phys: float
+    r_phys: float,
+    config: Optional[Dict] = None
 ) -> str:
     """Evaluates the Policy 5 triage decision for a single telemetry timestep.
     
-    Multiplicative Cyber-Physical Risk Integration:
-    Live TDCRI is defined multiplicatively as:
-        TDCRI_t = TS_t * R_physical
-    where TS_t in [0, 1] is the calibrated trust score and R_physical in [0, 1] is the base
-    hydraulic consequence score of the highest-risk asset affected by top anomalous sensors.
-    
-    Policy 5 Action Routing Criteria:
-    An alert escalates to the Immediate Action Tier if:
-    1. Standard Action Threshold: TS >= 0.80 and asset has at least moderate consequence (R_phys >= 0.35)
-    2. High-Consequence Fast-Path: TS >= 0.75 when asset is highly critical (R_phys >= 0.55)
-    Otherwise, if TS >= 0.50, it routes to Human Review; if TS < 0.50, it is suppressed to Monitor.
+    Thresholds are loaded strictly from authoritative config (config/trustrisk.yaml).
     """
+    cfg = config or load_config()
+    p5_cfg = cfg.get("triage", {}).get("policy_5_routing", {})
+    std_ts = float(p5_cfg.get("standard_action_ts", 0.80))
+    std_r = float(p5_cfg.get("standard_action_r_phys", 0.35))
+    fast_ts = float(p5_cfg.get("fast_path_ts", 0.75))
+    fast_r = float(p5_cfg.get("fast_path_r_phys", 0.55))
+    rev_ts = float(p5_cfg.get("review_ts", 0.50))
+
     if alarm_persist == 1:
         is_action = (
-            ((ts >= 0.80) and (r_phys >= 0.35)) or
-            ((ts >= 0.75) and (r_phys >= 0.55))
+            ((ts >= std_ts) and (r_phys >= std_r)) or
+            ((ts >= fast_ts) and (r_phys >= fast_r))
         )
         if is_action:
             return "ACTION"
-        if ts >= 0.50:
+        if ts >= rev_ts:
             return "REVIEW"
         return "MONITOR"
     return "MONITOR"
+
+
+def evaluate_policy_4_decision(
+    alarm_persist: int,
+    ts: float,
+    config: Optional[Dict] = None
+) -> str:
+    """Evaluates Policy 4 (Trust Gate Only / ATI Bands) using thresholds from config."""
+    cfg = config or load_config()
+    bands = cfg.get("trust", {}).get("ati_bands", {})
+    action_th = float(bands.get("action_threshold", 0.80))
+    review_th = float(bands.get("review_threshold", 0.50))
+
+    if alarm_persist == 1:
+        if ts >= action_th:
+            return "ACTION"
+        if ts >= review_th:
+            return "REVIEW"
+        return "MONITOR"
+    return "MONITOR"
+
