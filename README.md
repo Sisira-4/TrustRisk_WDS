@@ -126,7 +126,8 @@ TrustRisk-WDS/
 
 ## Scientific Rigor & Methodological Guarantees
 
-- **Single-Shot Quarantined Test Evaluation**: `BATADAL_test_dataset_labeled.csv` was evaluated strictly once after committing `frozen_config.json`. A hard rerun blocker guard in `results/v3/test_report.json` prevents multiple test sweeps.
+- **Test Set Protocol & Usage**: The detector hyperparameters, threshold and persistence rule were frozen and committed (`frozen_config.json`, SHA-256 recorded) before the first test evaluation. The official test set was therefore used once for the detector. Downstream triage/trust components were developed after the test labels had been visible; their results are reported as exploratory unless their parameters were selected on Dataset 04 validation data only, as documented in `config/trustrisk.yaml`. A hard rerun blocker guard in `results/v3/test_report.json` prevents multiple test sweeps.
+
 - **Label Integrity**: Unlabelled rows (`-999` in Dataset 04) are strictly quarantined (`LABEL = -999, TRAIN_MASK = 0, EVAL_MASK = 0`) and never assumed normal.
 - **Honest Metric Reporting**: We mandate that pointwise metrics are reported side-by-side with point-adjusted metrics to prevent inflated performance claims.
 - **Operational Delay Transparency**: We transparently document the mean 6.57–7.71h operational response delay (up to 10–11h for low-magnitude stealthy attacks).

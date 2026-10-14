@@ -55,7 +55,7 @@ def print_table_2():
     print("\n" + "#"*70)
     print("TABLE 2: FROZEN RESIDUAL DETECTOR TEST EVALUATION (POINTWISE VS. PA)")
     print("#"*70)
-    print("Note: Evaluated strictly once via experiments/v3_residual/run_test_once.py")
+    print("Note: Evaluated once via experiments/v3_residual/run_test_once.py")
     print("under frozen_config.json; rerun blocker active to prevent test data leakage.")
     print("#"*70)
     if not test_rep_json.exists():
