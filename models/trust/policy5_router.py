@@ -78,7 +78,20 @@ def evaluate_policy_5_decision(
     ts: float,
     r_phys: float
 ) -> str:
-    """Evaluates the Policy 5 triage decision for a single telemetry timestep."""
+    """Evaluates the Policy 5 triage decision for a single telemetry timestep.
+    
+    Multiplicative Cyber-Physical Risk Integration:
+    Live TDCRI is defined multiplicatively as:
+        TDCRI_t = TS_t * R_physical
+    where TS_t in [0, 1] is the calibrated trust score and R_physical in [0, 1] is the base
+    hydraulic consequence score of the highest-risk asset affected by top anomalous sensors.
+    
+    Policy 5 Action Routing Criteria:
+    An alert escalates to the Immediate Action Tier if:
+    1. Standard Action Threshold: TS >= 0.80 and asset has at least moderate consequence (R_phys >= 0.35)
+    2. High-Consequence Fast-Path: TS >= 0.75 when asset is highly critical (R_phys >= 0.55)
+    Otherwise, if TS >= 0.50, it routes to Human Review; if TS < 0.50, it is suppressed to Monitor.
+    """
     if alarm_persist == 1:
         is_action = (
             ((ts >= 0.80) and (r_phys >= 0.35)) or

@@ -8,9 +8,8 @@ __pycache__/
 # Model weights and scratch files
 *.pth
 *.pkl
+!models/detector/frozen_detector_checkpoint.pkl
 *.npy
 
 # Data artifacts and scratch
 data/zones/
-archive/
-

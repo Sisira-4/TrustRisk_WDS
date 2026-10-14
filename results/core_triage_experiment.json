@@ -48,15 +48,15 @@
     {
       "Policy": "Policy 4: Trust-Gated Triage (Full ATI)",
       "attacks_preserved": "7/7",
-      "attacks_action": 6,
-      "attacks_review_only": 1,
+      "attacks_action": 7,
+      "attacks_review_only": 0,
       "attacks_lost": 0,
-      "mean_delay_hours": 6.86,
+      "mean_delay_hours": 7.14,
       "unnecessary_responses": 0,
       "action_fa_hours": 0,
       "action_fa_rate_week": 0.0,
-      "review_fa_events": 2,
-      "review_fa_hours": 5,
+      "review_fa_events": 3,
+      "review_fa_hours": 6,
       "reduction_vs_raw": 100.0,
       "reduction_vs_persist": 100.0
     },
@@ -66,12 +66,12 @@
       "attacks_action": 7,
       "attacks_review_only": 0,
       "attacks_lost": 0,
-      "mean_delay_hours": 7.14,
+      "mean_delay_hours": 6.57,
       "unnecessary_responses": 0,
       "action_fa_hours": 0,
       "action_fa_rate_week": 0.0,
-      "review_fa_events": 2,
-      "review_fa_hours": 5,
+      "review_fa_events": 3,
+      "review_fa_hours": 6,
       "reduction_vs_raw": 100.0,
       "reduction_vs_persist": 100.0
     }
@@ -83,8 +83,8 @@
       "Attacks in Review Queue": 0,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 2,
-      "Mean Delay (h)": 6.86
+      "Review FA Events": 3,
+      "Mean Delay (h)": 6.57
     },
     {
       "Action Threshold (TS)": 0.75,
@@ -92,35 +92,35 @@
       "Attacks in Review Queue": 0,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 2,
-      "Mean Delay (h)": 6.86
+      "Review FA Events": 3,
+      "Mean Delay (h)": 6.57
     },
     {
       "Action Threshold (TS)": 0.8,
-      "Attacks in Action Tier": 6,
-      "Attacks in Review Queue": 1,
+      "Attacks in Action Tier": 7,
+      "Attacks in Review Queue": 0,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 2,
-      "Mean Delay (h)": 6.86
+      "Review FA Events": 3,
+      "Mean Delay (h)": 7.14
     },
     {
       "Action Threshold (TS)": 0.85,
-      "Attacks in Action Tier": 5,
-      "Attacks in Review Queue": 2,
+      "Attacks in Action Tier": 7,
+      "Attacks in Review Queue": 0,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 2,
-      "Mean Delay (h)": 6.71
+      "Review FA Events": 3,
+      "Mean Delay (h)": 9.71
     },
     {
       "Action Threshold (TS)": 0.88,
-      "Attacks in Action Tier": 5,
-      "Attacks in Review Queue": 2,
+      "Attacks in Action Tier": 4,
+      "Attacks in Review Queue": 3,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 2,
-      "Mean Delay (h)": 9.86
+      "Review FA Events": 3,
+      "Mean Delay (h)": 6.71
     },
     {
       "Action Threshold (TS)": 0.9,
@@ -128,26 +128,26 @@
       "Attacks in Review Queue": 3,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 2,
-      "Mean Delay (h)": 6.71
+      "Review FA Events": 3,
+      "Mean Delay (h)": 6.86
     }
   ],
   "component_ablation": [
     {
       "Configuration": "Full Trust Score (PCS + UQS + ERS)",
       "Attacks Preserved": "7/7",
-      "Attacks in Action Tier": 6,
+      "Attacks in Action Tier": 7,
       "Unnecessary Responses (Action FA)": 0,
-      "Review Queue FA Events": 2,
-      "Mean Delay (h)": 6.86
+      "Review Queue FA Events": 3,
+      "Mean Delay (h)": 7.14
     },
     {
       "Configuration": "Ablate PCS (UQS + ERS only: 0.60(1-U) + 0.40 ERS)",
       "Attacks Preserved": "7/7",
-      "Attacks in Action Tier": 6,
+      "Attacks in Action Tier": 5,
       "Unnecessary Responses (Action FA)": 3,
-      "Review Queue FA Events": 1,
-      "Mean Delay (h)": 9.29
+      "Review Queue FA Events": 0,
+      "Mean Delay (h)": 5.43
     },
     {
       "Configuration": "Ablate UQS (PCS + ERS only: 0.70 PCS + 0.30 ERS)",
@@ -160,10 +160,10 @@
     {
       "Configuration": "Ablate ERS (PCS + UQS only: 0.55 PCS + 0.45(1-U))",
       "Attacks Preserved": "7/7",
-      "Attacks in Action Tier": 5,
+      "Attacks in Action Tier": 7,
       "Unnecessary Responses (Action FA)": 0,
       "Review Queue FA Events": 0,
-      "Mean Delay (h)": 6.71
+      "Mean Delay (h)": 9.57
     }
   ]
 }

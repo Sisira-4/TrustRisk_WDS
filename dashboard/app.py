@@ -46,8 +46,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+from models.trust.unified_trust_engine import verify_checkpoint_hash
+
 @st.cache_data
 def load_data():
+    # Verify model provenance via cryptographic checkpoint hash
+    verify_checkpoint_hash()
+    
     if not CLEAN_PIPE_PATH.exists():
         raise FileNotFoundError(f"Clean pipeline file not found at {CLEAN_PIPE_PATH}. Run 'python reproduce_all.py' first.")
     if not RISK_REPORT_PATH.exists():

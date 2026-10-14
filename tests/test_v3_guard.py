@@ -58,3 +58,40 @@ def test_pipeline_modules_do_not_import_test_set():
             for bad in ["batadal_test_dataset", "test_dataset_labeled"]:
                 assert bad not in txt, f"{f.name} in {module_dir} references test set ({bad})"
 
+
+def test_checkpoint_hash_identical_across_layers():
+    """Verify Section 6.1 Criterion 3: Single Unified Checkpoint across detector, trust, and dashboard."""
+    import json
+    import hashlib
+    root = Path(__file__).resolve().parents[1]
+    cfg_path = root / "frozen_config.json"
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+
+    ckpt_rel = cfg.get("checkpoint_file", "models/detector/frozen_detector_checkpoint.pkl")
+    ckpt_path = root / ckpt_rel
+    assert ckpt_path.exists(), f"Frozen checkpoint file does not exist at {ckpt_path}"
+
+    with open(ckpt_path, "rb") as f:
+        computed_sha = hashlib.sha256(f.read()).hexdigest()
+
+    expected_sha = cfg.get("checkpoint_sha256")
+    assert expected_sha is not None, "frozen_config.json must specify checkpoint_sha256"
+    assert computed_sha == expected_sha, (
+        f"Checkpoint SHA256 mismatch: computed {computed_sha} != expected {expected_sha}"
+    )
+
+    # Check that UnifiedTrustEngine's verify_checkpoint_hash succeeds
+    sys.path.insert(0, str(root))
+    from models.trust.unified_trust_engine import verify_checkpoint_hash, load_checkpoint
+    assert verify_checkpoint_hash(), "UnifiedTrustEngine.verify_checkpoint_hash() must return True"
+    
+    ckpt_data = load_checkpoint()
+    for req_key in ["models", "mu", "sd", "keep", "r_mu", "r_sd", "threshold"]:
+        assert req_key in ckpt_data, f"Checkpoint missing required key: {req_key}"
+    assert len(ckpt_data["models"]) == len(ckpt_data["sensor_names"]), "Models count must match sensors count"
+    assert "coef" in ckpt_data["models"][0] and "intercept" in ckpt_data["models"][0]
+    assert abs(ckpt_data["threshold"] - 7.4532) < 1e-4, f"Checkpoint threshold {ckpt_data['threshold']} != 7.4532"
+
+
+

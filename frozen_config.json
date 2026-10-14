@@ -24,5 +24,7 @@
     "projected_f1": 0.8289
   },
   "frozen_at": "2026-10-11T15:39:00+05:30",
-  "status": "FROZEN_BEFORE_TEST_EVALUATION"
+  "status": "FROZEN_BEFORE_TEST_EVALUATION",
+  "checkpoint_file": "models/detector/frozen_detector_checkpoint.pkl",
+  "checkpoint_sha256": "5758d9eb92ceb0cbd01cd361bdc350ca4f07d013ea401dd1e494caa3e030d8e2"
 }

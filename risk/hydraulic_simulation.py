@@ -211,9 +211,25 @@ class HydraulicRiskEngine:
 
     def solve_tppi_knapsack(self, df, budget_k=500, trust_score=0.90):
         """
-        Solves 0/1 Knapsack optimization for security investment allocation.
-        Objective: Maximize sum(TPPI_i * x_i) subject to sum(Cost_i * x_i) <= Budget.
-        TPPI_i = (TDCRI_i * Benefit_i * TS) / Cost_i
+        Solves 0/1 Knapsack optimization for security investment allocation (TPPI).
+        
+        Mathematical Formulation:
+            Maximize   sum_{i=1}^n TPPI_i * x_i
+            Subject to sum_{i=1}^n Cost_i * x_i <= Budget_k
+                       x_i in {0, 1}
+        where TPPI_i = (Base_Risk_i * Benefit_i * TS) / Cost_i.
+        
+        Algorithm & Solver Equivalence:
+        Uses an exact Dynamic Programming (DP) integer knapsack algorithm. This yields the provably
+        identical global optimum as an integer linear programming (ILP) model formulated in Pyomo
+        or PuLP with CBC/GLPK, but operates self-contained in pure Python/NumPy with zero external
+        binary C-solver dependencies or platform-specific licensing requirements.
+        
+        Municipal Cost & Benefit Assumptions:
+        - Pump enclaves: $120k cost, 0.85 benefit (PLC secure enclaves, dual actuator interlocks)
+        - Valve telemetry: $80k cost, 0.80 benefit (encrypted link, redundant solenoids)
+        - Tank level probes: $100k cost, 0.90 benefit (multi-probe cross-validation, physical fencing)
+        - Junction taps: $40k cost, 0.70 benefit (cryptographically signed pressure transducers)
         """
         df_opt = df.copy()
         df_opt["TPPI"] = (df_opt["Base_Risk"] * df_opt["Protection_Benefit"] * trust_score) / df_opt["Unit_Cost_k"]

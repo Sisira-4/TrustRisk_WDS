@@ -15,7 +15,7 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
 
 ## 2. Uncertainty Quantification (UQS) Discriminative Validity
 - Evaluated on test set classification error: $e_t = |y_t - \hat{y}_t|$
-- **AUROC (Uncertainty vs. Error)**: **0.5945** (> 0.50 requirement satisfied).
+- **AUROC (Uncertainty vs. Error)**: **0.5786** (> 0.50 requirement satisfied).
 - Proves epistemic uncertainty is statistically elevated when the model makes an error.
 
 ---
@@ -33,6 +33,6 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
 - **Canonical Formula**:  
   $$TS_t = 0.45 \cdot PCS_t + 0.35 \cdot (1 - UQS_t) + 0.20 \cdot ERS_t$$
 - **Calibrated Triage Bands on Test Set**:
-  - **ACTION ($TS \ge 0.80$)**: 173 hours
-  - **REVIEW ($0.50 \le TS < 0.80$)**: 1582 hours
-  - **MONITOR ($TS < 0.50$)**: 334 hours
+  - **ACTION ($TS \ge 0.80$)**: 194 hours
+  - **REVIEW ($0.50 \le TS < 0.80$)**: 1472 hours
+  - **MONITOR ($TS < 0.50$)**: 423 hours
