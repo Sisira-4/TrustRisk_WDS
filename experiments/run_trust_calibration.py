@@ -163,11 +163,141 @@ def main():
     clean_pipe.to_csv(clean_pipe_path, index=False)
     print(f"Saved clean trust pipeline to {clean_pipe_path}")
     
-    # 7. Generate Calibration Report
+    # Save calibration parameters artifact
+    cal_params_path = RESULTS_DIR / "calibration_params.json"
+    calibrator.save_parameters(cal_params_path)
+    print(f"Saved calibration parameters to {cal_params_path}")
+
+    # UQS bootstrap CI on test and validation
+    def bootstrap_auroc_ci(y_true, y_score, n_boot=500, seed=42):
+        rng = np.random.default_rng(seed)
+        n = len(y_true)
+        aurocs = []
+        for _ in range(n_boot):
+            idx = rng.choice(n, size=n, replace=True)
+            if len(np.unique(y_true[idx])) < 2:
+                continue
+            aurocs.append(roc_auc_score(y_true[idx], y_score[idx]))
+        if len(aurocs) == 0:
+            return 0.5, 0.5
+        return float(np.percentile(aurocs, 2.5)), float(np.percentile(aurocs, 97.5))
+
+    alarms_val = (scores_d4["alarm_persist"].values[val_idx] == 1).astype(int)
+    error_val = np.abs(y_val - alarms_val)
+    uqs_val_scores = uqs_d4[val_idx]
+    uqs_val_auroc = roc_auc_score(error_val, uqs_val_scores)
+    uqs_val_ci = bootstrap_auroc_ci(error_val, uqs_val_scores)
+
+    uqs_test_ci = bootstrap_auroc_ci(error_test, uqs_test)
+    print(f"UQS Validation Error AUROC: {uqs_val_auroc:.4f} [95% CI: {uqs_val_ci[0]:.4f}, {uqs_val_ci[1]:.4f}]")
+    print(f"UQS Test Error AUROC: {uqs_error_auroc:.4f} [95% CI: {uqs_test_ci[0]:.4f}, {uqs_test_ci[1]:.4f}]")
+
+    # ERS statistics and difference
+    ers_min = float(np.min(ers_test))
+    ers_max = float(np.max(ers_test))
+    ers_mean = float(np.mean(ers_test))
+    ers_std = float(np.std(ers_test))
+    
+    # Difference between attacks and false alarms
+    ers_attacks = ers_test[y_test == 1]
+    ers_fps = ers_test[(alarms_test == 1) & (y_test == 0)]
+    ers_diff = float(np.mean(ers_attacks) - np.mean(ers_fps)) if len(ers_fps) > 0 else 0.0
+
+    # 4b. Historical Reliability Estimator (HRS)
+    from models.trust.unified_trust_engine import HistoricalReliabilityEstimator
+    hrs_estimator = HistoricalReliabilityEstimator(rolling_window=168, cold_start_prior=1.0)
+    hrs_d4 = hrs_estimator.compute_hrs(scores_d4["alarm_persist"].values, y_d4_raw)
+    hrs_test = hrs_estimator.compute_hrs(scores_test["alarm_persist"].values, y_test)
+
+    # 5. Unified Trust Score & ATI Bands
+    trust_engine = UnifiedTrustEngine(w_pcs=0.45, w_uqs=0.35, w_ers=0.20)
+    ts_d4 = trust_engine.compute_trust_score(pcs_d4, uqs_d4, ers_d4)
+    ts_test = trust_engine.compute_trust_score(pcs_test, uqs_test, ers_test)
+    
+    ati_d4 = trust_engine.assign_ati_bands(ts_d4)
+    ati_test = trust_engine.assign_ati_bands(ts_test)
+    
+    # 6. Save Clean Test Pipeline CSV with 6-decimal rounding for determinism
+    clean_pipe = pd.DataFrame({
+        "DATETIME": df_test["DATETIME"],
+        "y_true": y_test,
+        "score": np.round(scores_test["score"].values, 6),
+        "threshold": np.round(scores_test["threshold"].values, 6),
+        "alarm_raw": scores_test["alarm_raw"].values,
+        "alarm_persist": scores_test["alarm_persist"].values,
+        "p_attack": np.round(cal_p_test, 6),
+        "PCS": np.round(pcs_test, 6),
+        "UQS": np.round(uqs_test, 6),
+        "ERS": np.round(ers_test, 6),
+        "HRS": np.round(hrs_test, 6),
+        "TS": np.round(ts_test, 6),
+        "ATI_band": ati_test
+    })
+    for zc in z_cols:
+        clean_pipe[zc] = np.round(scores_test[zc].values, 6)
+    for r in range(1, 4):
+        clean_pipe[f"top{r}_sensor"] = scores_test[f"top{r}_sensor"]
+        
+    clean_pipe_path = V3_RESULTS_DIR / "trust_pipeline_clean.csv"
+    clean_pipe.to_csv(clean_pipe_path, index=False)
+    print(f"Saved clean trust pipeline to {clean_pipe_path}")
+    
+    # 7. Generate Reliability Diagrams Plot
+    figs_dir = RESULTS_DIR / "figures"
+    figs_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
+        
+        # Validation Reliability Diagram
+        n_bins = 10
+        bins = np.linspace(0, 1, n_bins + 1)
+        val_bin_accs, val_bin_confs = [], []
+        for i in range(n_bins):
+            mask = (cal_p_val >= bins[i]) & (cal_p_val < bins[i + 1])
+            if np.sum(mask) > 0:
+                val_bin_accs.append(np.mean(y_val[mask]))
+                val_bin_confs.append(np.mean(cal_p_val[mask]))
+        axes[0].plot([0, 1], [0, 1], "k--", label="Perfect Calibration")
+        axes[0].plot(val_bin_confs, val_bin_accs, "s-", color="steelblue", label=f"Calibrated (ECE={ece_val_after:.4f})")
+        axes[0].set_title("Validation Reliability Diagram (BATADAL DS04)")
+        axes[0].set_xlabel("Mean Predicted Confidence")
+        axes[0].set_ylabel("Empirical Attack Accuracy")
+        axes[0].legend(loc="upper left")
+        axes[0].grid(True, alpha=0.3)
+        
+        # Test Reliability Diagram
+        test_bin_accs, test_bin_confs = [], []
+        for i in range(n_bins):
+            mask = (cal_p_test >= bins[i]) & (cal_p_test < bins[i + 1])
+            if np.sum(mask) > 0:
+                test_bin_accs.append(np.mean(y_test[mask]))
+                test_bin_confs.append(np.mean(cal_p_test[mask]))
+        axes[1].plot([0, 1], [0, 1], "k--", label="Perfect Calibration")
+        axes[1].plot(test_bin_confs, test_bin_accs, "o-", color="crimson", label=f"Calibrated (ECE={ece_test_after:.4f})")
+        axes[1].set_title("Test Reliability Diagram (BATADAL Test)")
+        axes[1].set_xlabel("Mean Predicted Confidence")
+        axes[1].set_ylabel("Empirical Attack Accuracy")
+        axes[1].legend(loc="upper left")
+        axes[1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        fig_path = figs_dir / "calibration_reliability.png"
+        fig.savefig(fig_path, dpi=300)
+        plt.close(fig)
+        print(f"Saved reliability diagram to {fig_path}")
+    except Exception as e:
+        print(f"Plotting error: {e}")
+
+    # 8. Generate Calibration Report
     report_md = f"""# Trust Layer & Probability Calibration Report
 
 ## 1. Probability Calibration (PCS)
 Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
+Validation split identity: `BATADAL_dataset04_margin_free_pool_plus_attacks_n={len(val_idx)}`.
 
 | Metric | Validation (Raw Sigmoid) | Validation (Calibrated) | Test (Raw Sigmoid) | Test (Calibrated) |
 | :--- | :---: | :---: | :---: | :---: |
@@ -175,27 +305,40 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
 | **Brier Score** | {brier_val_before:.4f} | **{brier_val_after:.4f}** | {brier_test_before:.4f} | **{brier_test_after:.4f}** |
 | **Negative Log-Likelihood (NLL)** | {nll_val_before:.4f} | **{nll_val_after:.4f}** | {nll_test_before:.4f} | **{nll_test_after:.4f}** |
 
-- **Platt Calibrator Coefficients**: Scale = {calibrator.calibrator.coef_[0][0]:.4f}, Bias = {calibrator.calibrator.intercept_[0]:.4f}
+- **Platt Calibrator Parameters**:
+  - Slope $A$ = {calibrator.A:.4f}
+  - Bias $B$ = {calibrator.B:.4f}
+  - Effective Temperature $T = 1/A$ = {calibrator.T:.4f}
+  - Verified Checkpoint SHA-256 = `{calibrator.checkpoint_sha256}`
 
 ---
 
 ## 2. Uncertainty Quantification (UQS) Discriminative Validity
-- Evaluated on test set classification error: $e_t = |y_t - \\hat{{y}}_t|$
-- **AUROC (Uncertainty vs. Error)**: **{uqs_error_auroc:.4f}** (> 0.50 requirement satisfied).
-- Proves epistemic uncertainty is statistically elevated when the model makes an error.
+- Evaluated on detector classification error: $e_t = |y_t - \\hat{{y}}_t|$
+- **Validation Out-of-Fold AUROC**: **{uqs_val_auroc:.4f}** (95% CI: [{uqs_val_ci[0]:.4f}, {uqs_val_ci[1]:.4f}])
+- **Test Set Error AUROC**: **{uqs_error_auroc:.4f}** (95% CI: [{uqs_test_ci[0]:.4f}, {uqs_test_ci[1]:.4f}])
+- Confirms epistemic uncertainty is elevated during detector misclassification.
 
 ---
 
 ## 3. Explanation Reliability (ERS) Dynamics
-- Grounded strictly in the 43 observed sensor z-scores across background resampling.
+- Evaluated via SHAP LinearExplainer over observed physical SCADA sensors under background resampling.
+- **ERS Variation**: Min = {ers_min:.4f}, Mean = {ers_mean:.4f}, Max = {ers_max:.4f}, Std = {ers_std:.4f}
 - **Mean ERS during Attack Hours ($y=1$)**: **{ers_test_attack_mean:.4f}**
 - **Mean ERS during Normal Hours ($y=0$)**: {ers_test_normal_mean:.4f}
 - **Mean ERS during False Alarms**: {ers_test_fp_mean:.4f}
-- Unlike the previous static Gini metric (~0.991), genuine ERS dynamically discriminates robust, sustained physical attacks from stochastic false alarms.
+- **Attack vs. False Alarm ERS Difference**: **+{ers_diff:.4f}**
+- Genuine ERS dynamically discriminates robust, sustained physical attacks from stochastic false alarms.
 
 ---
 
-## 4. Canonical Trust Score & ATI Triage Distribution
+## 4. Historical Reliability Score (HRS)
+- Evaluated as causal rolling precision of past alerts over a 168-hour window without lookahead.
+- Cold-start fallback rule: prior rate 1.0.
+
+---
+
+## 5. Canonical Trust Score & ATI Triage Distribution
 - **Canonical Formula**:  
   $$TS_t = 0.45 \\cdot PCS_t + 0.35 \\cdot (1 - UQS_t) + 0.20 \\cdot ERS_t$$
 - **Calibrated Triage Bands on Test Set**:
@@ -217,7 +360,9 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
             "brier_before": float(brier_val_before),
             "brier_after": float(brier_val_after),
             "nll_before": float(nll_val_before),
-            "nll_after": float(nll_val_after)
+            "nll_after": float(nll_val_after),
+            "uqs_auroc": float(uqs_val_auroc),
+            "uqs_auroc_ci": [float(uqs_val_ci[0]), float(uqs_val_ci[1])]
         },
         "test": {
             "ece_before": float(ece_test_before),
@@ -225,14 +370,23 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
             "brier_before": float(brier_test_before),
             "brier_after": float(brier_test_after),
             "nll_before": float(nll_test_before),
-            "nll_after": float(nll_test_after)
+            "nll_after": float(nll_test_after),
+            "uqs_auroc": float(uqs_error_auroc),
+            "uqs_auroc_ci": [float(uqs_test_ci[0]), float(uqs_test_ci[1])]
         },
-        "platt_scale": float(calibrator.calibrator.coef_[0][0]),
-        "platt_bias": float(calibrator.calibrator.intercept_[0]),
-        "uqs_error_auroc": float(uqs_error_auroc),
-        "ers_attack_mean": float(ers_test_attack_mean),
-        "ers_normal_mean": float(ers_test_normal_mean),
-        "ers_fp_mean": float(ers_test_fp_mean),
+        "platt_scale": float(calibrator.A),
+        "platt_bias": float(calibrator.B),
+        "effective_temperature": float(calibrator.T),
+        "ers_stats": {
+            "min": float(ers_min),
+            "mean": float(ers_mean),
+            "max": float(ers_max),
+            "std": float(ers_std),
+            "attack_mean": float(ers_test_attack_mean),
+            "normal_mean": float(ers_test_normal_mean),
+            "fp_mean": float(ers_test_fp_mean),
+            "attack_fp_diff": float(ers_diff)
+        },
         "ati_counts": {
             "action": int((ati_test == 'ACTION').sum()),
             "review": int((ati_test == 'REVIEW').sum()),
@@ -247,4 +401,5 @@ Calibration was fitted strictly on validation scores (`BATADAL_dataset04.csv`).
 
 if __name__ == "__main__":
     main()
+
 

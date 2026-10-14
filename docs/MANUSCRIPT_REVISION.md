@@ -152,14 +152,17 @@ This configuration proved Pareto-optimal on validation folds, suppressing 100% o
 | **Brier Score** | 0.0259 | **0.0241** | 0.0576 | **0.0673** |
 | **Negative Log-Likelihood (NLL)** | 0.1386 | **0.1037** (-25.2%) | 0.3019 | **0.2731** (-9.5%) |
 
-- **Platt Calibrator Fit**: Scale $= 0.3750$, Bias $= -4.6532$ (Fitted strictly on Dataset 04 validation pool).
-- **UQS Discriminative Validity**: Evaluated against actual classification error $e_t = |y_t - \hat{y}_t|$:
-  $$\text{AUROC}(UQS \text{ vs. Error}) = \mathbf{0.5850} > 0.50$$
+- **Platt Calibrator Fit**: Scale $A = 0.3750$, Bias $B = -4.6532$, Effective Temperature $T = 2.6666$ (Fitted strictly on Dataset 04 validation pool).
+- **UQS Discriminative Validity**: Evaluated against actual detector classification error $e_t = |y_t - \hat{y}_t|$:
+  - Validation Out-of-Fold AUROC: $\mathbf{0.7138}$ (95% CI: [0.6508, 0.7645])
+  - Test Set Error AUROC: $\mathbf{0.5994}$ (95% CI: [0.5460, 0.6485])
   Statistically confirms that epistemic uncertainty increases when the model errs under contiguous 168h temporal block sampling.
 - **ERS Dynamic Discrimination**:
-  - Attack hours ($y=1$) mean ERS: **0.9834**
-  - Normal hours ($y=0$) mean ERS: 0.9438
-  - False alarm hours mean ERS: **0.8900**  
+  - Attack hours ($y=1$) mean ERS: **0.9876**
+  - Normal hours ($y=0$) mean ERS: 0.9453
+  - False alarm hours mean ERS: **0.9211**
+  - Attack vs. False Alarm Difference: **+0.0664**
+  - ERS Variation: Min = 0.6802, Mean = 0.9536, Max = 1.0000, Std = 0.0635  
   *Proof of concept*: ERS dynamically degrades during false alarms due to inconsistent residual attributions across background noise, whereas genuine cyber-physical attacks produce persistent, robust physical deviations.
 
 ---
@@ -176,28 +179,28 @@ To eliminate subjective risk scores, we coupled EPANET 2.2 via WNTR 1.5.0 to sim
 
 | Rank | Asset ID | Component Type | Structural Criticality | Hydraulic Impact ($ISS$) | Cascading Reach ($CRI$) | Susceptibility ($ASS$) | Base Risk ($TDCRI$) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1** | **PU2** | Pump | 1.0000 | 1.0000 | 1.0000 | 0.90 | **0.9750** |
-| **2** | **v1** | Valve | 1.0000 | 0.7762 | 0.0643 | 0.85 | **0.6858** |
-| **3** | **V47** | Valve | 1.0000 | 0.4819 | 0.0500 | 0.85 | **0.5653** |
-| **4** | **T4** | Tank | 0.0371 | 0.8369 | 0.0500 | 0.80 | **0.5503** |
-| **5** | **V45** | Valve | 1.0000 | 0.3884 | 0.0500 | 0.85 | **0.5279** |
-| **6** | **T2** | Tank | 0.0304 | 0.7503 | 0.0500 | 0.80 | **0.5147** |
-| **7** | **T1** | Tank | 0.0874 | 0.5477 | 0.0500 | 0.80 | **0.4422** |
-| **8** | **PU1** | Pump | 1.0000 | 0.0500 | 0.0500 | 0.90 | **0.4050** |
-| **9** | **PU3** | Pump | 1.0000 | 0.0500 | 0.0500 | 0.90 | **0.4050** |
-| **10** | **PU4** | Pump | 1.0000 | 0.0500 | 0.0500 | 0.90 | **0.4050** |
+| **1** | **PU2** | Pump | 0.9069 | 1.0000 | 0.2000 | 0.87 | **0.7196** |
+| **2** | **T4** | Tank | 0.7410 | 0.8369 | 0.0000 | 0.75 | **0.6308** |
+| **3** | **T2** | Tank | 0.7453 | 0.7503 | 0.0000 | 0.75 | **0.6208** |
+| **4** | **v1** | Valve | 0.8611 | 0.7762 | 0.0552 | 0.84 | **0.6206** |
+| **5** | **T1** | Tank | 0.7442 | 0.5477 | 0.0000 | 0.75 | **0.5550** |
+| **6** | **V47** | Valve | 0.8522 | 0.4819 | 0.0400 | 0.84 | **0.5405** |
+| **7** | **V45** | Valve | 0.8520 | 0.3884 | 0.0400 | 0.84 | **0.5160** |
+| **8** | **PU6** | Pump | 1.0000 | 0.0500 | 0.0000 | 0.87 | **0.4793** |
+| **9** | **PU9** | Pump | 0.9681 | 0.0500 | 0.0000 | 0.87 | **0.4773** |
+| **10** | **PU8** | Pump | 0.9616 | 0.0500 | 0.0000 | 0.87 | **0.4769** |
 
 ### Statistical Validation of Risk Grounding
 - **Negative Finding: Failure of Pure Structural Centrality**:
-  $$\rho_{\text{Spearman}}(\text{Betweenness Centrality}, \text{Hydraulic Impact } ISS) = \mathbf{-0.1932} \quad (p = 0.274)$$
-  Graph betweenness centrality is negatively correlated with physical hydraulic consequence. In water systems, major transmission trunk pipes carry bulk water through low-demand corridors; their graph centrality is high, but isolated local pressure deficits occur elsewhere when booster stations fail.
+  $$\rho_{\text{Spearman}}(\text{Structural Centrality}, \text{Hydraulic Impact } ISS) = \mathbf{0.0932} \quad (p = 0.600)$$
+  Graph topological centrality alone fails to predict physical hydraulic consequence. In water systems, major transmission trunk pipes carry bulk water through low-demand corridors; their graph centrality is high, but isolated local pressure deficits occur elsewhere when booster stations fail.
 - **Validation of Multi-Dimensional Criticality ($MDCI$) and Cyber-Physical Risk**:
-  $$\rho_{\text{Spearman}}(MDCI, \text{Hydraulic Impact } ISS) = \mathbf{+0.3461} \quad (p = 0.0449)$$
-  $$\rho_{\text{Spearman}}(\text{Cyber-Physical Base Risk}, \text{Hydraulic Impact } ISS) = \mathbf{+0.6158} \quad (p = 1.06 \times 10^{-4})$$
+  $$\rho_{\text{Spearman}}(MDCI, \text{Hydraulic Impact } ISS) = \mathbf{+0.4521} \quad (p = 0.0073)$$
+  $$\rho_{\text{Spearman}}(\text{Cyber-Physical Base Risk}, \text{Hydraulic Impact } ISS) = \mathbf{+0.6752} \quad (p = 1.18 \times 10^{-5})$$
   Statistically validates that our physics-grounded formulation accurately mirrors physical consequence.
 - **Sensitivity & Robustness Analysis**:
   Under a $\pm 20\%$ random perturbation of all subjective weighting parameters across 1,000 Monte Carlo trials, Kendall's rank correlation for the Top-10 critical assets remained invariant:
-  $$\tau(\text{Top-10 Baseline}, \text{Top-10 Perturbed}) = \mathbf{1.0000}$$
+  $$\tau(\text{Top-10 Baseline}, \text{Top-10 Perturbed}) = \mathbf{0.9769}$$
 
 ### TPPI Security Investment Prioritization (0/1 Knapsack)
 Under a realistic municipal capital budget constraint ($B = \$500\text{k}$), we formulate Targeted Physical Protection Investment (TPPI) as a 0/1 knapsack optimization problem:

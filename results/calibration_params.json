@@ -1,0 +1,8 @@
+{
+  "method": "platt",
+  "A": 0.37500821840898335,
+  "B": -4.653164104237502,
+  "T": 2.6666082259280026,
+  "validation_data_identity": "BATADAL_dataset04_margin_free_pool_plus_attacks",
+  "checkpoint_sha256": "5758d9eb92ceb0cbd01cd361bdc350ca4f07d013ea401dd1e494caa3e030d8e2"
+}

@@ -58,11 +58,11 @@
 
 ```powershell
 pytest -q
-......................................                                   [100%]
-38 passed, 2 warnings in 5.95s
+.......................................................................................... [100%]
+90 passed, 145 warnings in 143.63s (0:02:23)
 ```
 
-All 38 unit, integration, and property tests pass across all 8 test modules:
+All 90 unit, integration, and property tests pass across all 24 test modules:
 1. `tests/test_no_leakage.py` (5 tests): Data card integrity, -999 masking, temporal split isolation.
 2. `tests/test_v3_guard.py` (6 tests): Single-shot test rerun blocker, causal persistence, margin exclusion, and single unified checkpoint SHA-256 hash verification.
 3. `tests/test_trust.py` (9 tests): Probability calibration, UQS 168h block continuity, ERS ranking stability, Linear SHAP attribution stability, and dual uncertainty quantification.

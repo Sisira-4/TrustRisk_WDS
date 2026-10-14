@@ -84,7 +84,7 @@ The TrustRisk-WDS framework evaluates strictly on the Battle of the Attack Detec
 | **Table 1** | **Benchmark Data Card** | `experiments/data_card.py` | Dataset 03 (8,761h normal), Dataset 04 (3,958h `-999` unlabelled, 219h attack), Test (1,682h normal, 407h attack). |
 | **Table 2** | **Frozen Detector Evaluation** | `results/v3/test_report.json` | Pointwise F1 = 0.8368, PA F1 = 0.9879, 7/7 attacks detected, 3 false alarms in 12.4 weeks. |
 | **Table 2d** | **Identical-Protocol Baselines** | `experiments/run_baseline_comparison.py` | Evaluates LSTM-AE ($F_1=0.2306$), LightGBM ($F_1=0.7116$), Physical-GNN ($F_1=0.2214$), vs. Ridge ($F_1=0.8368$). |
-| **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.7%); UQS Error AUROC = 0.5786 (> 0.50); ERS drops on false alarms. |
+| **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.7%); UQS Error AUROC = 0.5994 (> 0.50, 95% CI: [0.5460, 0.6485]); ERS discriminates attacks (0.9876) vs. false alarms (0.9211). |
 | **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6752$ ($p = 1.18 \times 10^{-5}$); MDCI $\rho = +0.4521$ ($p = 7.27 \times 10^{-3}$); Top-10 Kendall $\tau = 0.9769$; TPPI Pyomo Knapsack ($9$ assets, \$500k). |
 | **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Policy 4 eliminates 100% of Action tier false alarms; preserves 7/7 attacks; mean operational response delay = 7.14h (6.57h under Policy 5). |
 | **Figures 1–5** | **Publication-Grade Visualizations** | `experiments/generate_publication_figures.py` | Data Card timeline (`fig1`), Calibration diagram (`fig2`), UQS/ERS dynamics (`fig3`), WNTR scatter (`fig4`), Triage trade-off (`fig5`). |
@@ -148,7 +148,7 @@ TrustRisk-WDS/
 │   └── RELEASE_AND_ZENODO.md   # Archival release guidelines, CRediT roles & Zenodo DOI manifest
 ├── scripts/
 │   └── generate_project_tree.py # Automated ASCII tree generator
-├── tests/                   # Full pytest suite (71 passing tests)
+├── tests/                   # Full pytest suite (90 passing tests)
 ├── frozen_config.json       # Pre-committed frozen hyperparameters & checkpoint SHA-256
 ├── reproduce_all.py         # Master one-command replication suite
 ├── requirements.txt         # Pinned Python dependencies
