@@ -13,3 +13,4 @@ __pycache__/
 
 # Data artifacts and scratch
 data/zones/
+results/run_manifest.json
