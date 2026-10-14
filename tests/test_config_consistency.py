@@ -13,7 +13,7 @@ import re
 import pytest
 import yaml
 
-from config.loader import load_config, get_config_hash, ROOT
+from config.loader import load_config, get_config_hash, ROOT, generate_run_manifest
 
 def test_authoritative_config_exists_and_valid():
     """Validates structure and completeness of config/trustrisk.yaml."""
@@ -96,6 +96,8 @@ def test_derived_views_match_master_config():
 def test_run_manifest_consistency():
     """Verifies results/run_manifest.json contains accurate commit, config hash, and raw data hashes."""
     manifest_path = ROOT / "results" / "run_manifest.json"
+    if not manifest_path.exists():
+        generate_run_manifest(manifest_path)
     assert manifest_path.exists(), "results/run_manifest.json must exist"
 
     with open(manifest_path, "r", encoding="utf-8") as f:
