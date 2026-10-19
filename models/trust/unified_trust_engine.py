@@ -57,7 +57,6 @@ def load_checkpoint():
         return pickle.load(f)
 
 
-
 def compute_ece(y_true, y_prob, n_bins=10):
     """Computes Expected Calibration Error (ECE)."""
     y_true = np.asarray(y_true, dtype=float)
@@ -112,9 +111,14 @@ class EpistemicUncertaintyQuantifier:
         self.alpha = alpha
         self.block_size = block_size
         self.models = []
+        
+        # Initialize normalisers to None
+        self.diff_sd = None
+        self.p99_epi = None
+        self.p99_ale = None
 
     def fit(self, X_train):
-        """Fits ensemble over contiguous temporal blocks to preserve time-series structure."""
+        """Fits ensemble over contiguous temporal blocks AND computes normalisers on training data."""
         X = np.asarray(X_train, dtype=float)
         n_pairs = len(X) - 1
         X_prev = X[:-1]
@@ -124,14 +128,22 @@ class EpistemicUncertaintyQuantifier:
         self.models = []
         n_blocks = max(1, int((n_pairs * 0.8) / self.block_size))
 
+        # 1. Train the models (Original code)
         for _ in range(self.n_estimators):
             start_indices = rng.integers(0, max(1, n_pairs - self.block_size), size=n_blocks)
             block_indices = np.concatenate([np.arange(s, min(s + self.block_size, n_pairs)) for s in start_indices])
             m = Ridge(alpha=self.alpha).fit(X_prev[block_indices], X_next[block_indices])
             self.models.append(m)
+
+        # 2. Compute normalisers on training data only (The Fix for 3.3)
+        d = np.diff(X, axis=0)
+        self.diff_sd = d.std(axis=0) + 1e-6
+        self.p99_epi = np.percentile(self._raw_epistemic(X), 99)
+        self.p99_ale = np.percentile(self._raw_aleatoric(X), 99)
+
         return self
 
-    def compute_epistemic(self, X_series):
+    def _raw_epistemic(self, X_series):
         X = np.asarray(X_series, dtype=float)
         preds = []
         for m in self.models:
@@ -140,18 +152,25 @@ class EpistemicUncertaintyQuantifier:
             preds.append(np.mean(res, axis=1))
         pred_arr = np.array(preds)
         std_dev = np.std(pred_arr, axis=0)
-        std_full = np.pad(std_dev, (1, 0), mode='edge')
-        p99 = np.percentile(std_full, 99)
-        return np.clip(std_full / (p99 if p99 > 0 else 1.0), 0.0, 1.0)
+        return np.pad(std_dev, (1, 0), mode='edge')
 
-    def compute_aleatoric(self, X_series):
+    def _raw_aleatoric(self, X_series):
         X = np.asarray(X_series, dtype=float)
         diffs = np.diff(X, axis=0)
         diffs = np.vstack([diffs[:1], diffs])
-        diff_sd = np.std(diffs, axis=0) + 1e-6
-        aleatoric = np.mean((diffs / diff_sd)**2, axis=1)
-        p99 = np.percentile(aleatoric, 99)
-        return np.clip(aleatoric / (p99 if p99 > 0 else 1.0), 0.0, 1.0)
+        # Use self.diff_sd if it exists (set in fit), otherwise fallback
+        diff_sd = self.diff_sd if self.diff_sd is not None else (np.std(diffs, axis=0) + 1e-6)
+        return np.mean((diffs / diff_sd)**2, axis=1)
+
+    def compute_epistemic(self, X_series):
+        raw = self._raw_epistemic(X_series)
+        p99 = self.p99_epi if self.p99_epi is not None else np.percentile(raw, 99)
+        return np.clip(raw / (p99 if p99 > 0 else 1.0), 0.0, 1.0)
+
+    def compute_aleatoric(self, X_series):
+        raw = self._raw_aleatoric(X_series)
+        p99 = self.p99_ale if self.p99_ale is not None else np.percentile(raw, 99)
+        return np.clip(raw / (p99 if p99 > 0 else 1.0), 0.0, 1.0)
 
     def compute_uqs(self, X_series, alpha_epistemic=0.85):
         """Dual uncertainty: combines epistemic model uncertainty with aleatoric telemetry jitter."""
