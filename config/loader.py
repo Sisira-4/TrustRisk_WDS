@@ -15,13 +15,19 @@ CONFIG_PATH = ROOT / "config" / "trustrisk.yaml"
 
 
 def compute_sha256(file_path: Path) -> str:
-    """Computes the hex SHA-256 digest of a given file."""
+    """Computes the hex SHA-256 digest of a given file.
+    
+    For text files (.yaml, .yml, .json, .md, .csv, .py, .txt), normalizes CRLF to LF
+    to guarantee identical cryptographic hashes across Windows, macOS, and Linux CI.
+    """
     if not file_path.exists():
         raise FileNotFoundError(f"File not found for hash calculation: {file_path}")
     h = hashlib.sha256()
     with open(file_path, "rb") as f:
-        while chunk := f.read(65536):
-            h.update(chunk)
+        data = f.read()
+    if file_path.suffix.lower() in [".yaml", ".yml", ".json", ".md", ".csv", ".py", ".txt"]:
+        data = data.replace(b"\r\n", b"\n")
+    h.update(data)
     return h.hexdigest()
 
 

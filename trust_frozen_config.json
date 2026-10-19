@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "description": "Frozen Trust Score weights, ATI action cutoff, and Policy 3 PCS cutoff",
+    "validation_source": "BATADAL_dataset04 leave-one-attack-event-out CV (5 folds)",
+    "selection_rule": "Attacks Preserved == 5/5 -> min Action FA events -> min Mean Delay",
+    "authoritative_script": "experiments/run_triage_cv.py",
+    "frozen_timestamp": "2026-10-19T18:24:59.313345"
+  },
+  "trust_weights_3term": {
+    "w_pcs": 0.3,
+    "w_uqs": 0.4,
+    "w_ers": 0.3
+  },
+  "ati_bands": {
+    "action_threshold": 0.85,
+    "review_threshold": 0.5,
+    "monitor_threshold": 0.0
+  },
+  "policy_cutoffs": {
+    "policy3_pcs_cutoff": 0.85
+  },
+  "validation_metrics": {
+    "attacks_preserved": "5/5",
+    "action_fa_events": 4,
+    "review_fa_events": 16,
+    "mean_delay_hours": 14.6
+  }
+}

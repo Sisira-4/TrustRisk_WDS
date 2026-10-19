@@ -364,7 +364,14 @@ class UnifiedTrustEngine:
         TS = w1 * PCS + w2 * (1 - UQS) + w3 * ERS + w4 * HRS
     When HRS is omitted:
         TS = w_pcs_3term * PCS + w_uqs_3term * (1 - UQS) + w_ers_3term * ERS
-    All weights and band thresholds are loaded from config/trustrisk.yaml.
+    
+    Validation Protocol (Task 3.1):
+        Trust score 3-term weights (w_pcs, w_uqs, w_ers), ATI action cutoff, and Policy 3
+        PCS cutoff are selected via systematic leave-one-attack-event-out cross-validation
+        across 5 validation folds on BATADAL_dataset04 in experiments/run_triage_cv.py,
+        strictly prior to test set triage evaluation, and frozen in trust_frozen_config.json.
+    
+    All weights and band thresholds are loaded from config/trustrisk.yaml or trust_frozen_config.json.
     """
     def __init__(self, w_pcs=None, w_uqs=None, w_ers=None, config=None):
         if config is None:
