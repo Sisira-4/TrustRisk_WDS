@@ -390,20 +390,33 @@ class UnifiedTrustEngine:
         self.w3 = float(w_cfg.get("w3", 0.15))
         self.w4 = float(w_cfg.get("w4", 0.15))
         
+        # Check trust_frozen_config.json as authoritative frozen reference
+        frozen_cfg_path = ROOT / "trust_frozen_config.json"
+        frozen_cfg = {}
+        if frozen_cfg_path.exists():
+            try:
+                import json
+                with open(frozen_cfg_path, "r", encoding="utf-8") as f:
+                    frozen_cfg = json.load(f)
+            except Exception:
+                frozen_cfg = {}
+        frozen_w = frozen_cfg.get("trust_weights_3term", {})
+        frozen_ati = frozen_cfg.get("ati_bands", {})
+
         # 3-term weights (support custom override if provided in constructor)
         if w_pcs is not None and w_uqs is not None and w_ers is not None:
             self.w_pcs = float(w_pcs)
             self.w_uqs = float(w_uqs)
             self.w_ers = float(w_ers)
         else:
-            self.w_pcs = float(w_cfg.get("w_pcs_3term", 0.45))
-            self.w_uqs = float(w_cfg.get("w_uqs_3term", 0.35))
-            self.w_ers = float(w_cfg.get("w_ers_3term", 0.20))
+            self.w_pcs = float(w_cfg.get("w_pcs_3term", frozen_w.get("w_pcs", 0.30)))
+            self.w_uqs = float(w_cfg.get("w_uqs_3term", frozen_w.get("w_uqs", 0.40)))
+            self.w_ers = float(w_cfg.get("w_ers_3term", frozen_w.get("w_ers", 0.30)))
             
         ati_cfg = t_cfg.get("ati_bands", {})
-        self.action_threshold = float(ati_cfg.get("action_threshold", 0.80))
-        self.review_threshold = float(ati_cfg.get("review_threshold", 0.50))
-        self.monitor_threshold = float(ati_cfg.get("monitor_threshold", 0.00))
+        self.action_threshold = float(ati_cfg.get("action_threshold", frozen_ati.get("action_threshold", 0.85)))
+        self.review_threshold = float(ati_cfg.get("review_threshold", frozen_ati.get("review_threshold", 0.50)))
+        self.monitor_threshold = float(ati_cfg.get("monitor_threshold", frozen_ati.get("monitor_threshold", 0.00)))
         
         self.checkpoint_hash = verify_checkpoint_hash()
 

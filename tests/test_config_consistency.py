@@ -44,7 +44,7 @@ def test_authoritative_config_exists_and_valid():
     w = trust["weights"]
     assert pytest.approx(w["w1"] + w["w2"] + w["w3"] + w["w4"], 1e-4) == 1.0
     assert pytest.approx(w["w_pcs_3term"] + w["w_uqs_3term"] + w["w_ers_3term"], 1e-4) == 1.0
-    assert trust["ati_bands"]["action_threshold"] == 0.80
+    assert trust["ati_bands"]["action_threshold"] == 0.85
     assert trust["ati_bands"]["review_threshold"] == 0.50
     assert trust["hrs"]["rolling_window_hours"] == 168
 

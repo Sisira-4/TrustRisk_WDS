@@ -1,5 +1,5 @@
 {
-  "config_sha256": "d02b01ab278ca5c7f63cead2467f72bb6858c490c9b309491c7173bbae26b213",
+  "config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee",
   "validation": {
     "ece_before": 0.019772759412762957,
     "ece_after": 0.005236570488978755,
@@ -40,8 +40,8 @@
     "attack_fp_diff": 0.066422990206774
   },
   "ati_counts": {
-    "action": 40,
-    "review": 218,
-    "monitor": 1831
+    "action": 7,
+    "review": 1323,
+    "monitor": 759
   }
 }

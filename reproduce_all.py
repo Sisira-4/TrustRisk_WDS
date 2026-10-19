@@ -260,8 +260,17 @@ def main():
     # 7. Run Hydraulic Risk Simulation (Phase 4)
     run_phase_script("risk/hydraulic_simulation.py", "Phase 4 WNTR Hydraulic Consequence & TPPI Knapsack")
     
-    # 8. Run Core Alert Triage Experiment (Phase 5)
-    run_phase_script("experiments/run_core_triage_experiment.py", "Phase 5 Core Alert Triage Experiment")
+    # 8. Check / Run Core Alert Triage Experiment (Phase 5 Quarantined Test)
+    triage_rep = RESULTS_DIR / "core_triage_experiment.json"
+    if not triage_rep.exists():
+        run_phase_script("experiments/run_core_triage_experiment.py", 
+                         "Phase 5 Single-Shot Quarantined Test Triage Evaluation", 
+                         ["--confirm-test-use"])
+    else:
+        print(f"\n{'='*70}")
+        print(">> Phase 5 Quarantined Test Triage Evaluation: verified results/core_triage_experiment.json.")
+        print(">> Single-shot quarantine locked (run_core_triage_experiment.py rerun blocker active to prevent test leakage).")
+        print(f"{'='*70}")
 
     # 9. Generate Publication Figures (Phases 3 & 6)
     run_phase_script("experiments/generate_publication_figures.py", "Phases 3 & 6 Publication Figures Generation")

@@ -93,29 +93,30 @@ def test_event_level_bootstrap_confidence_intervals(triage_data):
 
 
 def test_ablation_demonstrates_multicomponent_necessity(triage_data):
-    """Verifies that each trust component (PCS, UQS, ERS, HRS, Risk Gate) provides distinct value."""
+    """Verifies that each trust component (PCS, UQS, ERS, Risk Gate) provides distinct value."""
     abl = {a["Configuration"]: a for a in triage_data["component_ablation"]}
     
-    full = abl["Full Trust Score (PCS + UQS + ERS + HRS)"]
+    full = next(v for k, v in abl.items() if "Full Trust Score" in k)
     assert full["Attacks Preserved"] == "7/7"
     assert full["Unnecessary Responses (Action FA)"] == 0
     
     # 1. Ablating PCS loses ground-truth attacks and surges delay
-    no_pcs = abl["Ablate PCS (w2=0.50, w3=0.25, w4=0.25)"]
+    no_pcs = next(v for k, v in abl.items() if "Ablate PCS" in k)
     assert no_pcs["Attacks Preserved"] != "7/7", "Ablating PCS must lose attacks"
     assert no_pcs["Attacks Lost"] > 0
     assert no_pcs["Mean Delay (h)"] > full["Mean Delay (h)"]
     
     # 2. Ablating UQS introduces false alarms into Review queue
-    no_uqs = abl["Ablate UQS (w1=0.57, w3=0.21, w4=0.21)"]
+    no_uqs = next(v for k, v in abl.items() if "Ablate UQS" in k)
     assert no_uqs["Review Queue FA Events"] > full["Review Queue FA Events"], (
         "Ablating UQS must increase Review queue false alarms"
     )
     
     # 3. Ablating ERS increases response latency
-    no_ers = abl["Ablate ERS (w1=0.47, w2=0.35, w4=0.18)"]
+    no_ers = next(v for k, v in abl.items() if "Ablate ERS" in k)
     assert no_ers["Mean Delay (h)"] > full["Mean Delay (h)"]
     
     # 4. Ablating Risk Gate evaluates Policy 4 vs Policy 5 trade-off
-    risk_abl = abl["Ablate Risk Gate (Policy 4 Trust-Only vs Policy 5 Risk-Gated)"]
+    risk_abl = next(v for k, v in abl.items() if "Risk Gate" in k)
     assert "P4" in str(risk_abl["Mean Delay (h)"]) and "P5" in str(risk_abl["Mean Delay (h)"])
+

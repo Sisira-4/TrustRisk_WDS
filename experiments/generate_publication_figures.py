@@ -287,7 +287,7 @@ def plot_fig5_triage_tradeoff():
     else:
         policies = ["P1: Raw\nThreshold", "P2: Temporal\nPersistence", "P3: Confidence\nGate", "P4: Full\nTrust Gate", "P5: Trust +\nRisk Gate"]
         fa_action = [4, 3, 0, 0, 0]
-        delays = [1.57, 4.86, 6.57, 11.57, 8.00]
+        delays = [1.57, 4.86, 6.57, 5.71, 6.86]
     
     x = np.arange(len(policies))
     width = 0.38

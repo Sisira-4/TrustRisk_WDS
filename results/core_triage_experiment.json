@@ -1,5 +1,5 @@
 {
-  "config_sha256": "d02b01ab278ca5c7f63cead2467f72bb6858c490c9b309491c7173bbae26b213",
+  "config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee",
   "headline_policies": [
     {
       "Policy": "Policy 1: Raw Detector Threshold",
@@ -152,18 +152,18 @@
       "Policy": "Policy 4: Trust-Gated Triage (Full ATI)",
       "attacks_preserved": "7/7",
       "attacks_preserved_count": 7,
-      "attacks_action": 3,
-      "attacks_review_only": 4,
+      "attacks_action": 1,
+      "attacks_review_only": 6,
       "attacks_lost": 0,
-      "mean_delay_hours": 11.57,
-      "median_delay_hours": 7.0,
+      "mean_delay_hours": 5.71,
+      "median_delay_hours": 3.0,
       "unnecessary_responses": 0,
       "action_fa_hours": 0,
       "action_fa_rate_week": 0.0,
-      "review_fa_events": 0,
-      "review_fa_hours": 0,
-      "review_fa_rate_week": 0.0,
-      "review_workload_hours_week": 0.0,
+      "review_fa_events": 2,
+      "review_fa_hours": 4,
+      "review_fa_rate_week": 0.16,
+      "review_workload_hours_week": 0.32,
       "reduction_vs_raw": 100.0,
       "reduction_vs_persist": 100.0,
       "bootstrap_ci": {
@@ -176,24 +176,24 @@
           100.0
         ],
         "attacks_action_pct_95ci": [
-          14.3,
-          85.7
+          0.0,
+          42.9
         ],
         "attacks_review_pct_95ci": [
-          14.3,
-          85.7
+          57.1,
+          100.0
         ],
         "attacks_lost_pct_95ci": [
           0.0,
           0.0
         ],
         "mean_delay_hours_95ci": [
-          4.14,
-          20.14
+          2.29,
+          9.57
         ],
         "review_fa_events_95ci": [
           0.0,
-          0.0
+          5.0
         ]
       }
     },
@@ -204,15 +204,15 @@
       "attacks_action": 2,
       "attacks_review_only": 5,
       "attacks_lost": 0,
-      "mean_delay_hours": 8.0,
+      "mean_delay_hours": 6.86,
       "median_delay_hours": 7.0,
       "unnecessary_responses": 0,
       "action_fa_hours": 0,
       "action_fa_rate_week": 0.0,
-      "review_fa_events": 0,
-      "review_fa_hours": 0,
-      "review_fa_rate_week": 0.0,
-      "review_workload_hours_week": 0.0,
+      "review_fa_events": 2,
+      "review_fa_hours": 4,
+      "review_fa_rate_week": 0.16,
+      "review_workload_hours_week": 0.32,
       "reduction_vs_raw": 100.0,
       "reduction_vs_persist": 100.0,
       "bootstrap_ci": {
@@ -238,11 +238,11 @@
         ],
         "mean_delay_hours_95ci": [
           3.14,
-          13.71
+          10.57
         ],
         "review_fa_events_95ci": [
           0.0,
-          0.0
+          5.0
         ]
       }
     }
@@ -250,12 +250,12 @@
   "tradeoff_sweep": [
     {
       "Action Threshold (TS)": 0.65,
-      "Attacks in Action Tier": 5,
-      "Attacks in Review Queue": 2,
+      "Attacks in Action Tier": 3,
+      "Attacks in Review Queue": 4,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 0,
-      "Mean Delay (h)": 7.43
+      "Review FA Events": 2,
+      "Mean Delay (h)": 9.0
     },
     {
       "Action Threshold (TS)": 0.7,
@@ -263,8 +263,8 @@
       "Attacks in Review Queue": 4,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 0,
-      "Mean Delay (h)": 11.29
+      "Review FA Events": 2,
+      "Mean Delay (h)": 10.14
     },
     {
       "Action Threshold (TS)": 0.75,
@@ -272,8 +272,8 @@
       "Attacks in Review Queue": 4,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 0,
-      "Mean Delay (h)": 11.29
+      "Review FA Events": 2,
+      "Mean Delay (h)": 10.14
     },
     {
       "Action Threshold (TS)": 0.8,
@@ -281,8 +281,8 @@
       "Attacks in Review Queue": 4,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 0,
-      "Mean Delay (h)": 11.57
+      "Review FA Events": 2,
+      "Mean Delay (h)": 15.57
     },
     {
       "Action Threshold (TS)": 0.85,
@@ -290,8 +290,8 @@
       "Attacks in Review Queue": 6,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 0,
-      "Mean Delay (h)": 6.86
+      "Review FA Events": 2,
+      "Mean Delay (h)": 5.71
     },
     {
       "Action Threshold (TS)": 0.9,
@@ -299,70 +299,60 @@
       "Attacks in Review Queue": 7,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA Events)": 0,
-      "Review FA Events": 0,
-      "Mean Delay (h)": 6.57
+      "Review FA Events": 2,
+      "Mean Delay (h)": 5.43
     }
   ],
   "component_ablation": [
     {
-      "Configuration": "Full Trust Score (PCS + UQS + ERS + HRS)",
+      "Configuration": "Full Trust Score (3-term: 0.30 PCS + 0.40(1-UQS) + 0.30 ERS)",
       "Attacks Preserved": "7/7",
-      "Attacks in Action Tier": 3,
-      "Attacks in Review Queue": 4,
+      "Attacks in Action Tier": 1,
+      "Attacks in Review Queue": 6,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA)": 0,
-      "Review Queue FA Events": 0,
-      "Mean Delay (h)": 11.57
+      "Review Queue FA Events": 2,
+      "Mean Delay (h)": 5.71
     },
     {
-      "Configuration": "Ablate PCS (w2=0.50, w3=0.25, w4=0.25)",
+      "Configuration": "Ablate PCS (w_uqs=0.57, w_ers=0.43)",
       "Attacks Preserved": "5/7",
-      "Attacks in Action Tier": 5,
-      "Attacks in Review Queue": 0,
+      "Attacks in Action Tier": 0,
+      "Attacks in Review Queue": 5,
       "Attacks Lost": 2,
       "Unnecessary Responses (Action FA)": 0,
-      "Review Queue FA Events": 2,
-      "Mean Delay (h)": 35.71
+      "Review Queue FA Events": 3,
+      "Mean Delay (h)": 17.71
     },
     {
-      "Configuration": "Ablate UQS (w1=0.57, w3=0.21, w4=0.21)",
+      "Configuration": "Ablate UQS (w_pcs=0.50, w_ers=0.50)",
       "Attacks Preserved": "7/7",
       "Attacks in Action Tier": 7,
       "Attacks in Review Queue": 0,
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA)": 0,
-      "Review Queue FA Events": 1,
-      "Mean Delay (h)": 6.86
+      "Review Queue FA Events": 3,
+      "Mean Delay (h)": 6.57
     },
     {
-      "Configuration": "Ablate ERS (w1=0.47, w2=0.35, w4=0.18)",
-      "Attacks Preserved": "7/7",
-      "Attacks in Action Tier": 3,
-      "Attacks in Review Queue": 4,
-      "Attacks Lost": 0,
+      "Configuration": "Ablate ERS (w_pcs=0.43, w_uqs=0.57)",
+      "Attacks Preserved": "3/7",
+      "Attacks in Action Tier": 0,
+      "Attacks in Review Queue": 3,
+      "Attacks Lost": 4,
       "Unnecessary Responses (Action FA)": 0,
       "Review Queue FA Events": 0,
-      "Mean Delay (h)": 12.71
-    },
-    {
-      "Configuration": "Ablate HRS (3-term: 0.45 PCS + 0.35(1-UQS) + 0.20 ERS)",
-      "Attacks Preserved": "7/7",
-      "Attacks in Action Tier": 3,
-      "Attacks in Review Queue": 4,
-      "Attacks Lost": 0,
-      "Unnecessary Responses (Action FA)": 0,
-      "Review Queue FA Events": 0,
-      "Mean Delay (h)": 11.57
+      "Mean Delay (h)": 27.29
     },
     {
       "Configuration": "Ablate Risk Gate (Policy 4 Trust-Only vs Policy 5 Risk-Gated)",
       "Attacks Preserved": "7/7",
-      "Attacks in Action Tier": "3 (P4) vs 2 (P5)",
-      "Attacks in Review Queue": "4 (P4) vs 5 (P5)",
+      "Attacks in Action Tier": "1 (P4) vs 2 (P5)",
+      "Attacks in Review Queue": "6 (P4) vs 5 (P5)",
       "Attacks Lost": 0,
       "Unnecessary Responses (Action FA)": 0,
       "Review Queue FA Events": 0,
-      "Mean Delay (h)": "11.57h (P4) vs 8.0h (P5)"
+      "Mean Delay (h)": "5.71h (P4) vs 6.86h (P5)"
     }
   ],
   "definitions": {

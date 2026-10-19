@@ -45,3 +45,14 @@ def test_engine_docstring_cites_triage_cv():
     assert doc is not None
     assert "experiments/run_triage_cv.py" in doc
     assert "trust_frozen_config.json" in doc
+
+
+def test_core_triage_rerun_blocker():
+    """Verifies that run_core_triage_experiment.py enforces quarantine and refuses without --confirm-test-use."""
+    import subprocess
+    import sys
+    cmd = [sys.executable, str(ROOT / "experiments" / "run_core_triage_experiment.py")]
+    res = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True)
+    assert res.returncode != 0
+    assert "Refusing: pass --confirm-test-use" in (res.stderr + res.stdout)
+

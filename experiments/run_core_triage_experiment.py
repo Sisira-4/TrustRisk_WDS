@@ -172,12 +172,26 @@ def compute_event_bootstrap_ci(action_mask, review_mask, y_true, attack_events, 
     }
 
 
-def main():
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description="Phase 5: Core Alert Triage Experiment under frozen validation settings.")
+    parser.add_argument("--confirm-test-use", action="store_true", help="Confirm execution on the official test set.")
+    parser.add_argument("--force", action="store_true", help="Force re-evaluation even if report already exists.")
+    args = parser.parse_args(argv)
+
+    if not args.confirm_test_use:
+        sys.exit("Refusing: pass --confirm-test-use to acknowledge this uses the test set once.")
+
+    json_report = RESULTS_DIR / "core_triage_experiment.json"
+    if json_report.exists() and not args.force:
+        sys.exit(f"Refusing: {json_report} already exists. The test set has been used; do not re-run or retune.")
+
     print("=" * 70)
     print("   EXECUTING PHASE 5: CORE ALERT TRIAGE EXPERIMENT & EVENT BOOTSTRAP")
+    print("   [Quarantine Pass Active: Single-Shot Evaluation on Official Test Set]")
     print("=" * 70)
 
-    # Load configuration
+    # Load authoritative configuration
     try:
         from config.loader import load_config, get_config_hash
         cfg = load_config()
@@ -186,13 +200,28 @@ def main():
         cfg = {}
         cfg_hash = "UNKNOWN"
 
+    # Load frozen validation configuration (Task 3.1)
+    frozen_path = ROOT / "trust_frozen_config.json"
+    frozen_cfg = {}
+    if frozen_path.exists():
+        with open(frozen_path, "r", encoding="utf-8") as f:
+            frozen_cfg = json.load(f)
+
+    w_pcs_val = float(frozen_cfg.get("trust_weights_3term", {}).get("w_pcs", 0.30))
+    w_uqs_val = float(frozen_cfg.get("trust_weights_3term", {}).get("w_uqs", 0.40))
+    w_ers_val = float(frozen_cfg.get("trust_weights_3term", {}).get("w_ers", 0.30))
+
     triage_cfg = cfg.get("triage", {})
     p5_cfg = triage_cfg.get("policy_5_routing", {})
     std_action_ts = float(p5_cfg.get("standard_action_ts", 0.80))
     std_action_r_phys = float(p5_cfg.get("standard_action_r_phys", 0.35))
     fast_path_ts = float(p5_cfg.get("fast_path_ts", 0.75))
     fast_path_r_phys = float(p5_cfg.get("fast_path_r_phys", 0.55))
-    review_ts = float(p5_cfg.get("review_ts", 0.50))
+    review_ts = float(frozen_cfg.get("ati_bands", {}).get("review_threshold", p5_cfg.get("review_ts", 0.50)))
+    
+    # Task 3.1: Policy 4 Action Cutoff & Policy 3 PCS Cutoff from validation
+    p4_action_cutoff = float(frozen_cfg.get("ati_bands", {}).get("action_threshold", 0.85))
+    policy3_pcs_cutoff = float(frozen_cfg.get("policy_cutoffs", {}).get("policy3_pcs_cutoff", 0.85))
 
     df = pd.read_csv(PIPE_PATH)
     y = df["y_true"].values
@@ -228,13 +257,13 @@ def main():
     p2_act = (alarm_per == 1)
     p2_rev = np.zeros(len(y), bool)
     
-    # Policy 3: Confidence-Only Gating (PCS)
-    p3_act = (alarm_per == 1) & (pcs >= 0.85)
-    p3_rev = (alarm_per == 1) & (pcs < 0.85)
+    # Policy 3: Confidence-Only Gating (PCS) (Cutoff from validation)
+    p3_act = (alarm_per == 1) & (pcs >= policy3_pcs_cutoff)
+    p3_rev = (alarm_per == 1) & (pcs < policy3_pcs_cutoff)
     
-    # Policy 4: Full ATI Gate (Calibrated Trust Score)
-    p4_act = (alarm_per == 1) & (ts_canon >= std_action_ts)
-    p4_rev = (alarm_per == 1) & (ts_canon >= review_ts) & (ts_canon < std_action_ts)
+    # Policy 4: Full ATI Gate (Calibrated Trust Score) (Action cutoff from validation)
+    p4_act = (alarm_per == 1) & (ts_canon >= p4_action_cutoff)
+    p4_rev = (alarm_per == 1) & (ts_canon >= review_ts) & (ts_canon < p4_action_cutoff)
     
     # Policy 5: Trust + Physical Risk Gate (Thresholds from config / DS04 validation)
     p5_act = (alarm_per == 1) & (
@@ -292,21 +321,27 @@ def main():
     df_tradeoff = pd.DataFrame(tradeoff_records)
 
     # -------------------------------------------------------------
-    # 3. 5-COMPONENT TRUST ABLATION STUDY
+    # 3. COMPONENT TRUST ABLATION STUDY
     # -------------------------------------------------------------
-    # Canonical 4-term TS: 0.40 PCS + 0.30(1-UQS) + 0.15 ERS + 0.15 HRS
+    # Evaluates component necessity relative to the validation-selected Policy 4 trust engine
+    w_uqs_no_pcs = round(w_uqs_val / (w_uqs_val + w_ers_val), 2)
+    w_ers_no_pcs = round(w_ers_val / (w_uqs_val + w_ers_val), 2)
+    w_pcs_no_uqs = round(w_pcs_val / (w_pcs_val + w_ers_val), 2)
+    w_ers_no_uqs = round(w_ers_val / (w_pcs_val + w_ers_val), 2)
+    w_pcs_no_ers = round(w_pcs_val / (w_pcs_val + w_uqs_val), 2)
+    w_uqs_no_ers = round(w_uqs_val / (w_pcs_val + w_uqs_val), 2)
+
     ablations = [
-        ("Full Trust Score (PCS + UQS + ERS + HRS)", ts_canon),
-        ("Ablate PCS (w2=0.50, w3=0.25, w4=0.25)", (0.30 * (1.0 - uqs) + 0.15 * ers + 0.15 * hrs) / 0.60),
-        ("Ablate UQS (w1=0.57, w3=0.21, w4=0.21)", (0.40 * pcs + 0.15 * ers + 0.15 * hrs) / 0.70),
-        ("Ablate ERS (w1=0.47, w2=0.35, w4=0.18)", (0.40 * pcs + 0.30 * (1.0 - uqs) + 0.15 * hrs) / 0.85),
-        ("Ablate HRS (3-term: 0.45 PCS + 0.35(1-UQS) + 0.20 ERS)", 0.45 * pcs + 0.35 * (1.0 - uqs) + 0.20 * ers),
+        (f"Full Trust Score (3-term: {w_pcs_val:.2f} PCS + {w_uqs_val:.2f}(1-UQS) + {w_ers_val:.2f} ERS)", ts_canon),
+        (f"Ablate PCS (w_uqs={w_uqs_no_pcs:.2f}, w_ers={w_ers_no_pcs:.2f})", (w_uqs_val * (1.0 - uqs) + w_ers_val * ers) / (w_uqs_val + w_ers_val)),
+        (f"Ablate UQS (w_pcs={w_pcs_no_uqs:.2f}, w_ers={w_ers_no_uqs:.2f})", (w_pcs_val * pcs + w_ers_val * ers) / (w_pcs_val + w_ers_val)),
+        (f"Ablate ERS (w_pcs={w_pcs_no_ers:.2f}, w_uqs={w_uqs_no_ers:.2f})", (w_pcs_val * pcs + w_uqs_val * (1.0 - uqs)) / (w_pcs_val + w_uqs_val)),
     ]
 
     ablation_records = []
     for name, ts_abl in ablations:
-        act = (alarm_per == 1) & (ts_abl >= std_action_ts)
-        rev = (alarm_per == 1) & (ts_abl >= review_ts) & (ts_abl < std_action_ts)
+        act = (alarm_per == 1) & (ts_abl >= p4_action_cutoff)
+        rev = (alarm_per == 1) & (ts_abl >= review_ts) & (ts_abl < p4_action_cutoff)
         ev = evaluate_policy_point_estimates(act, rev, y, attack_events, normal_segments)
         ablation_records.append({
             "Configuration": name,
@@ -417,7 +452,7 @@ def main():
 ---
 
 ## 5. Key Scientific Insights & Negative Findings
-1. **Critical Role of Probability Calibration (PCS)**: Ablating PCS severely degrades alert triage, causing **2 attacks to be completely lost** and inflating mean detection delay from 11.57h to 37.60h. Platt temperature scaling is essential to convert raw residual z-scores into calibrated physical anomaly probabilities.
+1. **Critical Role of Probability Calibration (PCS)**: Ablating PCS severely degrades alert triage, causing **{df_ablation[df_ablation['Configuration'].str.contains('Ablate PCS')]['Attacks Lost'].values[0]} attacks to be completely lost** and inflating mean detection delay from {p4_info['mean_delay_hours']}h to {df_ablation[df_ablation['Configuration'].str.contains('Ablate PCS')]['Mean Delay (h)'].values[0]}h. Platt temperature scaling is essential to convert raw residual z-scores into calibrated physical anomaly probabilities.
 2. **Epistemic Uncertainty Suppression (UQS)**: Ablating UQS introduces false alarms into the human review queue. The moving-block bootstrap ensemble variance effectively flags transient sensor instability that lacks persistent model consensus.
 3. **Latency vs. False Alarm Trade-off**: Trust validation introduces an average delay trade-off ({float(p4_info['mean_delay_hours']) - float(p2_info['mean_delay_hours']):.1f} hours) for stealthy low-magnitude attacks while responding rapidly for overt attacks. Policy 5 resolves this trade-off by fast-tracking alerts occurring at high-criticality assets ({policies_summary[4]['mean_delay_hours']}h mean delay).
 4. **Honest Small-Sample Caveat**: Baseline persistence produces exactly 3 false-alarm events outside attack windows on the official test set. While Policy 4 eliminates all 3 events from Action, the small sample size dictates that the true population false-alarm elimination rate is bounded within the 95% event bootstrap CI of [66.7%, 100.0%].

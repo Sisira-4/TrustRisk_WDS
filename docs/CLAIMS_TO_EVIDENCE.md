@@ -44,10 +44,10 @@ In accordance with Rule 1 of the Project Specification (*No Fabrication*), zero 
 | **CLM-32** | Policy 4 (Trust Gate) Action False Alarms | `0` | `results/core_triage_experiment.json` | `headline_policies[3]['unnecessary_responses']` | `test_clm_32_policy4_action_fa` |
 | **CLM-33** | Policy 4 False Alarm Elimination Rate | `100.0%` | `results/core_triage_experiment.json` | `headline_policies[3]['reduction_vs_persist']` | `test_clm_33_policy4_fa_reduction` |
 | **CLM-34** | Policy 4 Attacks Preserved (Action + Review) | `7/7` | `results/core_triage_experiment.json` | `headline_policies[3]['attacks_preserved']` | `test_clm_34_policy4_attacks_preserved` |
-| **CLM-35** | Policy 4 Mean Operational Response Delay | `11.57` | `results/core_triage_experiment.json` | `headline_policies[3]['mean_delay_hours']` | `test_clm_35_policy4_mean_delay` |
+| **CLM-35** | Policy 4 Mean Operational Response Delay | `5.71` | `results/core_triage_experiment.json` | `headline_policies[3]['mean_delay_hours']` | `test_clm_35_policy4_mean_delay` |
 | **CLM-36** | Policy 5 (Trust-Risk Gate) Action False Alarms | `0` | `results/core_triage_experiment.json` | `headline_policies[4]['unnecessary_responses']` | `test_clm_36_policy5_action_fa` |
 | **CLM-37** | Policy 5 Attacks Preserved (Action + Review) | `7/7` | `results/core_triage_experiment.json` | `headline_policies[4]['attacks_preserved']` | `test_clm_37_policy5_attacks_preserved` |
-| **CLM-38** | Policy 5 Mean Operational Response Delay | `8.00` | `results/core_triage_experiment.json` | `headline_policies[4]['mean_delay_hours']` | `test_clm_38_policy5_mean_delay` |
+| **CLM-38** | Policy 5 Mean Operational Response Delay | `6.86` | `results/core_triage_experiment.json` | `headline_policies[4]['mean_delay_hours']` | `test_clm_38_policy5_mean_delay` |
 | **CLM-39** | Physical-GNN Test Pointwise F1 | `0.2282` | `results/baseline_comparison.json` | `Physical_GNN.pointwise_f1` | `test_clm_39_physical_gnn_f1` |
 | **CLM-40** | Physical-GNN Test Point-Adjusted F1 | `0.8365` | `results/baseline_comparison.json` | `Physical_GNN.pa_f1` | `test_clm_40_physical_gnn_pa_f1` |
 | **CLM-41** | LSTM Autoencoder Test Pointwise F1 | `0.2306` | `results/baseline_comparison.json` | `LSTM_Autoencoder.pointwise_f1` | `test_clm_41_lstm_ae_f1` |

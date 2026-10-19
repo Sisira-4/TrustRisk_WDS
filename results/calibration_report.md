@@ -45,8 +45,8 @@ Validation split identity: `BATADAL_dataset04_margin_free_pool_plus_attacks_n=36
 
 ## 5. Canonical Trust Score & ATI Triage Distribution
 - **Canonical Formula**:  
-  $$TS_t = 0.45 \cdot PCS_t + 0.35 \cdot (1 - UQS_t) + 0.20 \cdot ERS_t$$
+  $$TS_t = 0.30 \cdot PCS_t + 0.40 \cdot (1 - UQS_t) + 0.30 \cdot ERS_t$$
 - **Calibrated Triage Bands on Test Set**:
-  - **ACTION ($TS \ge 0.80$)**: 40 hours
-  - **REVIEW ($0.50 \le TS < 0.80$)**: 218 hours
-  - **MONITOR ($TS < 0.50$)**: 1831 hours
+  - **ACTION ($TS \ge 0.85$)**: 7 hours
+  - **REVIEW ($0.50 \le TS < 0.85$)**: 1323 hours
+  - **MONITOR ($TS < 0.50$)**: 759 hours

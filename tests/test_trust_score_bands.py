@@ -30,7 +30,7 @@ def test_trust_score_canonical_formula():
 
 
 def test_trust_score_3term_fallback():
-    """Verify C6: When HRS is omitted, 3-term weights sum to 1.0 (w_pcs=0.45, w_uqs=0.35, w_ers=0.20)."""
+    """Verify C6: When HRS is omitted, 3-term weights sum to 1.0 (w_pcs=0.30, w_uqs=0.40, w_ers=0.30)."""
     cfg = load_config()
     engine = UnifiedTrustEngine(config=cfg)
 
@@ -39,21 +39,22 @@ def test_trust_score_3term_fallback():
     ers = np.array([0.90])
 
     ts = engine.compute_trust_score(pcs, uqs, ers)
-    # Expected: 0.45*0.80 + 0.35*0.80 + 0.20*0.90 = 0.36 + 0.28 + 0.18 = 0.82
-    assert ts[0] == pytest.approx(0.82, abs=1e-5)
+    expected = engine.w_pcs * 0.80 + engine.w_uqs * (1.0 - 0.20) + engine.w_ers * 0.90
+    assert ts[0] == pytest.approx(expected, abs=1e-5)
 
 
 def test_ati_band_exact_boundaries():
-    """Verify C6: ATI bands strictly obey boundary rules at TS = 0.50 and TS = 0.80."""
+    """Verify C6: ATI bands strictly obey boundary rules at TS = 0.50 and TS = action_threshold (0.85)."""
     cfg = load_config()
     engine = UnifiedTrustEngine(config=cfg)
+    act = engine.action_threshold
 
     boundary_scores = np.array([
         0.00,
         0.499999,
         0.500000,
-        0.799999,
-        0.800000,
+        act - 0.000001,
+        act,
         1.000000
     ])
 
@@ -61,8 +62,8 @@ def test_ati_band_exact_boundaries():
     assert bands[0] == "MONITOR", "TS = 0.00 must be MONITOR"
     assert bands[1] == "MONITOR", "TS = 0.499999 must be MONITOR"
     assert bands[2] == "REVIEW", "TS = 0.500000 must be REVIEW (exact boundary)"
-    assert bands[3] == "REVIEW", "TS = 0.799999 must be REVIEW"
-    assert bands[4] == "ACTION", "TS = 0.800000 must be ACTION (exact boundary)"
+    assert bands[3] == "REVIEW", f"TS = {act - 0.000001} must be REVIEW"
+    assert bands[4] == "ACTION", f"TS = {act} must be ACTION (exact boundary)"
     assert bands[5] == "ACTION", "TS = 1.000000 must be ACTION"
 
 

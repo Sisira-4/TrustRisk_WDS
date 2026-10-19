@@ -209,8 +209,8 @@ def main():
     hrs_d4 = hrs_estimator.compute_hrs(scores_d4["alarm_persist"].values, y_d4_raw)
     hrs_test = hrs_estimator.compute_hrs(scores_test["alarm_persist"].values, y_test)
 
-    # 5. Unified Trust Score & ATI Bands
-    trust_engine = UnifiedTrustEngine(w_pcs=0.45, w_uqs=0.35, w_ers=0.20)
+    # 5. Unified Trust Score & ATI Bands (loaded from trust_frozen_config.json / config)
+    trust_engine = UnifiedTrustEngine()
     ts_d4 = trust_engine.compute_trust_score(pcs_d4, uqs_d4, ers_d4)
     ts_test = trust_engine.compute_trust_score(pcs_test, uqs_test, ers_test)
     
@@ -340,10 +340,10 @@ Validation split identity: `BATADAL_dataset04_margin_free_pool_plus_attacks_n={l
 
 ## 5. Canonical Trust Score & ATI Triage Distribution
 - **Canonical Formula**:  
-  $$TS_t = 0.45 \\cdot PCS_t + 0.35 \\cdot (1 - UQS_t) + 0.20 \\cdot ERS_t$$
+  $$TS_t = {trust_engine.w_pcs:.2f} \\cdot PCS_t + {trust_engine.w_uqs:.2f} \\cdot (1 - UQS_t) + {trust_engine.w_ers:.2f} \\cdot ERS_t$$
 - **Calibrated Triage Bands on Test Set**:
-  - **ACTION ($TS \\ge 0.80$)**: {int((ati_test == 'ACTION').sum())} hours
-  - **REVIEW ($0.50 \\le TS < 0.80$)**: {int((ati_test == 'REVIEW').sum())} hours
+  - **ACTION ($TS \\ge {trust_engine.action_threshold:.2f}$)**: {int((ati_test == 'ACTION').sum())} hours
+  - **REVIEW ($0.50 \\le TS < {trust_engine.action_threshold:.2f}$)**: {int((ati_test == 'REVIEW').sum())} hours
   - **MONITOR ($TS < 0.50$)**: {int((ati_test == 'MONITOR').sum())} hours
 """
     cal_rep_path = RESULTS_DIR / "calibration_report.md"

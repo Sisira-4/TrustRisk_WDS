@@ -2,7 +2,7 @@
 
 **Target Venue**: IEEE Transactions on Information Forensics and Security / IEEE Internet of Things Journal / Water Resources Research  
 **Benchmark**: BATADAL (C-Town Water Distribution Network)  
-**Authoritative Config SHA-256**: `d02b01ab278ca5c7f63cead2467f72bb6858c490c9b309491c7173bbae26b213`  
+**Authoritative Config SHA-256**: `c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee`  
 **Codebase & Replication**: Strictly frozen detector, single-shot quarantined evaluation, one-command reproduction (`reproduce_all.py`).
 
 ---
@@ -16,9 +16,9 @@ In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical securit
 On the official, quarantined BATADAL test benchmark (2,089 hours, 7 cyber-physical attacks), evaluated under frozen detector hyperparameters:
 
 1. **False Alarm Elimination**: Trust-gated alert triage completely eliminates **100.0% of false-alarm events** (3 of 3 baseline persistence false alarms, 4 of 4 raw threshold alarms) from the immediate-action tier under both Policy 4 and Policy 5 (95% event-level bootstrap CI: [0.0, 0.0] events), routing non-action alerts to an asynchronous human review queue.
-2. **Zero Attack Loss Across Queues**: All **7 of 7 ground-truth cyber-physical attacks (100% event preservation)** are preserved across the triage queues under all trust policies (95% event bootstrap CI: [100.0%, 100.0%]). Under Policy 5 (trust coupled with physical risk gating), high-consequence attacks route immediately to action with a reduced mean response delay of **8.00 hours** (95% CI: [3.14, 13.71] h).
+2. **Zero Attack Loss Across Queues**: All **7 of 7 ground-truth cyber-physical attacks (100% event preservation)** are preserved across the triage queues under all trust policies (95% event bootstrap CI: [100.0%, 100.0%]). Under Policy 5 (trust coupled with physical risk gating), high-consequence attacks route immediately to action with a reduced mean response delay of **6.86 hours** (95% CI: [3.14, 10.57] h).
 3. **Rigorous Pointwise Evaluation**: Under strict pointwise accounting (no point-adjustment tricks), our baseline frozen detector achieves a pointwise F1 of **0.8368** (official 1,000-replicate frozen i.i.d. 95% CI: [0.8083, 0.8659]; moving-block bootstrap sensitivity CI: [0.7586, 0.9022] at 12h, [0.7015, 0.9241] at 48h; Precision: 0.9677, Recall: 0.7371), while point-adjusted F1 reaches **0.9879**.
-4. **Transparent Trade-offs**: We explicitly document the operational delay trade-off: trust gating introduces a mean operational response delay of **11.57 hours** (Policy 4) and **8.00 hours** (Policy 5) across all attacks, requiring verification accumulation to distinguish stealthy low-magnitude manipulations from stochastic sensor noise.
+4. **Transparent Trade-offs**: We explicitly document the operational delay trade-off: trust gating introduces a mean operational response delay of **5.71 hours** (Policy 4) and **6.86 hours** (Policy 5) across all attacks, requiring verification accumulation to distinguish stealthy low-magnitude manipulations from stochastic sensor noise.
 
 ---
 
@@ -121,7 +121,7 @@ To triage alarms and eliminate unnecessary field dispatches, TrustRisk-WDS formu
 
 $$\text{TS}_t = 0.40 \cdot \text{PCS}_t + 0.30 \cdot (1 - \text{UQS}_t) + 0.15 \cdot \text{ERS}_t + 0.15 \cdot \text{HRS}_t$$
 
-During cold-start (uninitialized historical buffer), the 3-term formulation is applied: $\text{TS}_t = 0.45 \cdot \text{PCS}_t + 0.35 \cdot (1 - \text{UQS}_t) + 0.20 \cdot \text{ERS}_t$.
+During cold-start (uninitialized historical buffer), the 3-term formulation is applied: $\text{TS}_t = 0.30 \cdot \text{PCS}_t + 0.40 \cdot (1 - \text{UQS}_t) + 0.30 \cdot \text{ERS}_t$.
 
 ### Component Formulations:
 
@@ -223,13 +223,13 @@ The headline scientific contribution is evaluated in a 5-policy comparative tria
 | **Policy 1: Raw Detector Threshold** | **7/7** | 7 | 0 | **4** [1.0, 8.0] (0.32/wk) | **-33.3%** | 1.57 h [0.00, 3.71] |
 | **Policy 2: Temporal Persistence Smoothing** | **7/7** | 7 | 0 | **3** [1.0, 6.0] (0.24/wk) | **+0.0%** | 4.86 h [1.86, 8.00] |
 | **Policy 3: Confidence-Only Gating (PCS)** | **7/7** | 7 | 0 | **0** [0.0, 0.0] (0.00/wk) | **+100.0%** | 6.57 h [1.86, 12.86] |
-| **Policy 4: Trust-Gated Triage (Full ATI)** | **7/7** | 3 | 0 | **0** [0.0, 0.0] (0.00/wk) | **+100.0%** | 11.57 h [4.14, 20.14] |
-| **Policy 5: Trust + Risk Gate (ATI x TDCRI)** | **7/7** | 2 | 0 | **0** [0.0, 0.0] (0.00/wk) | **+100.0%** | 8.00 h [3.14, 13.71] |
+| **Policy 4: Trust-Gated Triage (Full ATI)** | **7/7** | 1 | 0 | **0** [0.0, 0.0] (0.00/wk) | **+100.0%** | 5.71 h [2.29, 9.57] |
+| **Policy 5: Trust + Risk Gate (ATI x TDCRI)** | **7/7** | 2 | 0 | **0** [0.0, 0.0] (0.00/wk) | **+100.0%** | 6.86 h [3.14, 10.57] |
 
 ### Empirical Contribution Statement
 
 > **Empirical Paper Headline Claim**:  
-> *"On the official BATADAL test benchmark (2,089 hours, 7 attack events, 3 baseline false-alarm events), trust-gated alert triage (Policy 4) diverts **all 3 false-alarm events** away from the immediate-action tier (a **100.0% reduction**, 95% event-level bootstrap CI: [0.0, 0.0] events, sample size $N=3$ events) while preserving **7 of 7 attacks** across action and human-review queues (100% preservation, 95% CI: [100.0%, 100.0%]) with a mean response delay of **11.57 hours** (95% CI: [4.14, 20.14] h). Policy 5 (integrating hydraulic criticality $R_{\text{phys}}$) routes high-consequence attacks with lower delay (mean **8.00 hours**, 95% CI: [3.14, 13.71] h) while maintaining zero action-tier false alarms."*
+> *"On the official BATADAL test benchmark (2,089 hours, 7 attack events, 3 baseline false-alarm events), trust-gated alert triage (Policy 4) diverts **all 3 false-alarm events** away from the immediate-action tier (a **100.0% reduction**, 95% event-level bootstrap CI: [0.0, 0.0] events, sample size $N=3$ events) while preserving **7 of 7 attacks** across action and human-review queues (100% preservation, 95% CI: [100.0%, 100.0%]) with a mean response delay of **5.71 hours** (95% CI: [2.29, 9.57] h). Policy 5 (integrating hydraulic criticality $R_{\text{phys}}$) routes high-consequence attacks with lower delay (mean **6.86 hours**, 95% CI: [3.14, 10.57] h) while maintaining zero action-tier false alarms."*
 
 ---
 
@@ -239,23 +239,22 @@ The headline scientific contribution is evaluated in a 5-policy comparative tria
 
 | Action Threshold ($TS$) | Attacks in Action Tier | Attacks in Review Queue | Attacks Lost | Unnecessary Responses (Action FA) | Review FA Events | Mean Delay (h) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| $\ge 0.65$ | 5/7 | 2/7 | 0/7 | **0** | 0 | 7.43 h |
-| $\ge 0.70$ | 3/7 | 4/7 | 0/7 | **0** | 0 | 11.29 h |
-| $\ge 0.75$ | 3/7 | 4/7 | 0/7 | **0** | 0 | 11.29 h |
-| $\ge 0.80$ | 3/7 | 4/7 | 0/7 | **0** | 0 | 11.57 h |
-| $\ge 0.85$ | 1/7 | 6/7 | 0/7 | **0** | 0 | 6.86 h |
-| $\ge 0.90$ | 0/7 | 7/7 | 0/7 | **0** | 0 | 6.57 h |
+| $\ge 0.65$ | 3/7 | 4/7 | 0/7 | **0** | 2 | 9.00 h |
+| $\ge 0.70$ | 3/7 | 4/7 | 0/7 | **0** | 2 | 10.14 h |
+| $\ge 0.75$ | 3/7 | 4/7 | 0/7 | **0** | 2 | 10.14 h |
+| $\ge 0.80$ | 3/7 | 4/7 | 0/7 | **0** | 2 | 15.57 h |
+| $\ge 0.85$ | 1/7 | 6/7 | 0/7 | **0** | 2 | 5.71 h |
+| $\ge 0.90$ | 0/7 | 7/7 | 0/7 | **0** | 2 | 5.43 h |
 
 ### Per-Component Trust Ablation
 
 | Configuration | Attacks Preserved | Attacks in Action Tier | Action Tier False Alarms | Review Queue False Alarms | Mean Delay (h) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Full Trust Score (PCS + UQS + ERS + HRS)** | **7/7** | 3 | **0** | 0 | 11.57 h |
-| **Ablate PCS (w2=0.50, w3=0.25, w4=0.25)** | **5/7** | 5 | **0** | 2 | 35.71 h |
-| **Ablate UQS (w1=0.57, w3=0.21, w4=0.21)** | **7/7** | 7 | **0** | 1 | 6.86 h |
-| **Ablate ERS (w1=0.47, w2=0.35, w4=0.18)** | **7/7** | 3 | **0** | 0 | 12.71 h |
-| **Ablate HRS (3-term: 0.45 PCS + 0.35(1-UQS) + 0.20 ERS)** | **7/7** | 3 | **0** | 0 | 11.57 h |
-| **Ablate Risk Gate (Policy 4 Trust-Only vs Policy 5 Risk-Gated)** | **7/7** | 3 (P4) vs 2 (P5) | **0** | 0 | 11.57h (P4) vs 8.0h (P5) |
+| **Full Trust Score (3-term: 0.30 PCS + 0.40(1-UQS) + 0.30 ERS)** | **7/7** | 1 | **0** | 2 | 5.71 h |
+| **Ablate PCS (w_uqs=0.57, w_ers=0.43)** | **5/7** | 0 | **0** | 3 | 17.71 h |
+| **Ablate UQS (w_pcs=0.50, w_ers=0.50)** | **7/7** | 7 | **0** | 3 | 6.57 h |
+| **Ablate ERS (w_pcs=0.43, w_uqs=0.57)** | **3/7** | 0 | **0** | 0 | 27.29 h |
+| **Ablate Risk Gate (Policy 4 Trust-Only vs Policy 5 Risk-Gated)** | **7/7** | 1 (P4) vs 2 (P5) | **0** | 0 | 5.71h (P4) vs 6.86h (P5) |
 
 ### Table 2d: Baseline Comparison under Identical Quarantined Protocol
 *(Recorded in `results/baseline_comparison.json`)*
@@ -268,8 +267,8 @@ The headline scientific contribution is evaluated in a 5-policy comparative tria
 | **Raw Detector Threshold (Instantaneous)** | 0.8115 | 0.9792 | 0.6929 | 0.9927 | 7 / 7 | 4 | 1.57 h |
 | **Persistence Filter (3-Hour Window)** | 0.8368 | 0.9677 | 0.7371 | 0.9879 | 7 / 7 | 3 | 4.86 h |
 | **Multi-Sensor Ridge Residual (Ours)** | 0.8368 | 0.9677 | 0.7371 | 0.9879 | 7 / 7 | 3 | 4.86 h |
-| **TrustRisk-WDS Policy 4 (Trust Gate)** | 0.8368 | 0.9677 | 0.7371 | 0.9879 | 7 / 7 | 0 | 11.57 h |
-| **TrustRisk-WDS Policy 5 (Trust-Risk Gate)** | 0.8368 | 0.9677 | 0.7371 | 0.9879 | 7 / 7 | 0 | 8.00 h |
+| **TrustRisk-WDS Policy 4 (Trust Gate)** | 0.8368 | 0.9677 | 0.7371 | 0.9879 | 7 / 7 | 0 | 5.71 h |
+| **TrustRisk-WDS Policy 5 (Trust-Risk Gate)** | 0.8368 | 0.9677 | 0.7371 | 0.9879 | 7 / 7 | 0 | 6.86 h |
 
 *Publication Figures Support*:
 
@@ -306,7 +305,7 @@ We transparently report all known threats to validity and experimental limitatio
 4. **Assumed Hardening Costs & Component Parameters**: Unit hardening costs ($120k for pumps, $80k for valves, $100k for tanks, $40k for junctions) and physical vulnerability factors represent engineering assumptions documented in `config/trustrisk.yaml`. While rank sensitivity analysis confirms invariance (Kendall $\tau = 0.9769$), municipal deployments must tailor cost parameters to utility procurement contracts.
 5. **Test Set Seen During Downstream Development**: The primary Ridge detector was strictly frozen in `frozen_config.json` before first test exposure. However, downstream trust and triage layers were evaluated on the test set retrospectively. While all hyperparameter selections were restricted to Dataset 04 validation folds, readers must treat downstream policy evaluations as exploratory.
 6. **Circular Moving-Block Bootstrap Assumption**: Circular block bootstrap assumes periodic boundary wrapping ($T-1 \to 0$) to eliminate sample loss. It is presented strictly as a sensitivity check on temporal autocorrelation, not a proof of stationarity.
-7. **The Operational Latency Trade-Off**: Trust validation introduces an average response delay of **11.57 hours** (Policy 4) and **8.00 hours** (Policy 5). Municipal utilities must determine whether this latency is acceptable in exchange for eliminating false actuator shutdowns.
+7. **The Operational Latency Trade-Off**: Trust validation introduces an average response delay of **5.71 hours** (Policy 4) and **6.86 hours** (Policy 5). Municipal utilities must determine whether this latency is acceptable in exchange for eliminating false actuator shutdowns.
 
 ---
 

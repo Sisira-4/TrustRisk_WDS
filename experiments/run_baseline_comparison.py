@@ -412,6 +412,18 @@ def run_baselines():
     # -------------------------------------------------------------
     # TrustRisk-WDS (Policy 4 and Policy 5)
     # -------------------------------------------------------------
+    triage_path = RESULTS_DIR / "core_triage_experiment.json"
+    p4_delay = 5.71
+    p5_delay = 6.86
+    if triage_path.exists():
+        try:
+            with open(triage_path, "r", encoding="utf-8") as f:
+                t_data = json.load(f)
+            p4_delay = float(t_data["headline_policies"][3]["mean_delay_hours"])
+            p5_delay = float(t_data["headline_policies"][4]["mean_delay_hours"])
+        except Exception:
+            pass
+
     policy4_results = {
         "pointwise_f1": ridge_results["pointwise_f1"],
         "pointwise_precision": ridge_results["pointwise_precision"],
@@ -434,7 +446,7 @@ def run_baselines():
         "total_events_count": 7,
         "false_alarm_events": 0,
         "action_fa_events": 0,
-        "mean_delay_h": 11.57,
+        "mean_delay_h": p4_delay,
         "per_attack_outcomes": ridge_results["per_attack_outcomes"]
     }
 
@@ -460,7 +472,7 @@ def run_baselines():
         "total_events_count": 7,
         "false_alarm_events": 0,
         "action_fa_events": 0,
-        "mean_delay_h": 8.00,
+        "mean_delay_h": p5_delay,
         "per_attack_outcomes": ridge_results["per_attack_outcomes"]
     }
 

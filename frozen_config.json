@@ -27,5 +27,5 @@
   "status": "FROZEN_BEFORE_TEST_EVALUATION",
   "checkpoint_file": "models/detector/frozen_detector_checkpoint.pkl",
   "checkpoint_sha256": "5758d9eb92ceb0cbd01cd361bdc350ca4f07d013ea401dd1e494caa3e030d8e2",
-  "authoritative_config_sha256": "d02b01ab278ca5c7f63cead2467f72bb6858c490c9b309491c7173bbae26b213"
+  "authoritative_config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee"
 }

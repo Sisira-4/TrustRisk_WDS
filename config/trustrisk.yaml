@@ -75,14 +75,14 @@ trust:
     w2: 0.30
     w3: 0.15
     w4: 0.15
-    # 3-term weights (used when HRS is uninitialized / cold start)
-    w_pcs_3term: 0.45
-    w_uqs_3term: 0.35
-    w_ers_3term: 0.20
+    # 3-term weights (empirically selected on dataset04 validation folds via experiments/run_triage_cv.py)
+    w_pcs_3term: 0.30
+    w_uqs_3term: 0.40
+    w_ers_3term: 0.30
   ati_bands:
-    # Action Triage Index operational bands
-    action_threshold: 0.80   # TS >= 0.80: Action tier (automated SCADA interlock)
-    review_threshold: 0.50   # 0.50 <= TS < 0.80: Review tier (asynchronous analyst review)
+    # Action Triage Index operational bands (selected on dataset04 validation folds via experiments/run_triage_cv.py)
+    action_threshold: 0.85   # TS >= 0.85: Action tier (automated SCADA interlock)
+    review_threshold: 0.50   # 0.50 <= TS < 0.85: Review tier (asynchronous analyst review)
     monitor_threshold: 0.0   # TS < 0.50: Monitor tier (low trust / noise suppression)
   hrs:
     rolling_window_hours: 168 # 1 week rolling historical precision

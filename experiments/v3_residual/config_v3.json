@@ -24,5 +24,5 @@
   },
   "test_file": "data/raw/BATADAL_test_dataset_labeled.csv",
   "notes": "Adopted Configuration (Ridge alpha=10.0, Top-3, Persistence 3-of-6, q=99.0). Settings fixed in config/trustrisk.yaml before test evaluation.",
-  "authoritative_config_sha256": "d02b01ab278ca5c7f63cead2467f72bb6858c490c9b309491c7173bbae26b213"
+  "authoritative_config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee"
 }

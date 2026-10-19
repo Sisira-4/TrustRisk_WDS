@@ -270,9 +270,9 @@ def test_clm_34_policy4_attacks_preserved(artifacts):
 
 def test_clm_35_policy4_mean_delay(artifacts):
     p4 = artifacts["triage_exp"]["headline_policies"][3]
-    assert pytest.approx(p4["mean_delay_hours"], abs=1e-2) == 11.57
-    assert "11.57" in artifacts["readme"]
-    assert "11.57" in artifacts["manuscript"]
+    assert pytest.approx(p4["mean_delay_hours"], abs=1e-2) == 5.71
+    assert "5.71" in artifacts["readme"]
+    assert "5.71" in artifacts["manuscript"]
 
 
 def test_clm_36_policy5_action_fa(artifacts):
@@ -287,9 +287,9 @@ def test_clm_37_policy5_attacks_preserved(artifacts):
 
 def test_clm_38_policy5_mean_delay(artifacts):
     p5 = artifacts["triage_exp"]["headline_policies"][4]
-    assert pytest.approx(p5["mean_delay_hours"], abs=1e-2) == 8.00
-    assert "8.00" in artifacts["readme"]
-    assert "8.00" in artifacts["manuscript"]
+    assert pytest.approx(p5["mean_delay_hours"], abs=1e-2) == 6.86
+    assert "6.86" in artifacts["readme"]
+    assert "6.86" in artifacts["manuscript"]
 
 
 def test_clm_39_physical_gnn_f1(artifacts):
