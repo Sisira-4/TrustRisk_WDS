@@ -197,7 +197,6 @@ class EpistemicUncertaintyQuantifier:
         self.alpha = alpha
         self.block_size = block_size
         self.alpha_epistemic = alpha_epistemic
-        self.models = []
         self.base_model = None
         self.member_pair_indices = []
         self.member_blocks = []
@@ -206,8 +205,13 @@ class EpistemicUncertaintyQuantifier:
         self.aleatoric_scale_ = 1.0
         self.fitted = False
 
+        # Initialize normalisers for Task 3.3 compatibility
+        self.diff_sd = None
+        self.p99_epi = None
+        self.p99_ale = None
+
     def fit(self, X_train):
-        """Fits ensemble over contiguous temporal blocks and establishes frozen normalization scales."""
+        """Fits ensemble over contiguous temporal blocks AND establishes frozen normalization scales on training data."""
         X = np.asarray(X_train, dtype=float)
         n_pairs = len(X) - 1
         X_prev = X[:-1]
@@ -217,6 +221,10 @@ class EpistemicUncertaintyQuantifier:
         self.base_model = Ridge(alpha=self.alpha).fit(X_prev, X_next)
         R_train = X_next - self.base_model.predict(X_prev)
         self.sensor_residual_std_ = np.std(R_train, axis=0) + 1e-6
+
+        # Normaliser differences for Task 3.3
+        d = np.diff(X, axis=0)
+        self.diff_sd = d.std(axis=0) + 1e-6
 
         # 2. Block-bootstrap ensemble preserving consecutive time steps
         rng = np.random.default_rng(123)
@@ -247,16 +255,18 @@ class EpistemicUncertaintyQuantifier:
         std_train = np.std(pred_arr, axis=0)
         p99_ep = float(np.percentile(std_train, 99.0))
         self.epistemic_scale_ = p99_ep if p99_ep > 0 else 1.0
+        self.p99_epi = self.epistemic_scale_
 
         R_train_std = R_train / self.sensor_residual_std_
         aleatoric_train = np.mean(R_train_std ** 2, axis=1)
         p99_al = float(np.percentile(aleatoric_train, 99.0))
         self.aleatoric_scale_ = p99_al if p99_al > 0 else 1.0
+        self.p99_ale = self.aleatoric_scale_
 
         self.fitted = True
         return self
 
-    def compute_epistemic(self, X_series):
+    def _raw_epistemic(self, X_series):
         X = np.asarray(X_series, dtype=float)
         if not self.models:
             return np.zeros(len(X))
@@ -267,25 +277,33 @@ class EpistemicUncertaintyQuantifier:
             preds.append(np.mean(res, axis=1))
         pred_arr = np.array(preds)
         std_dev = np.std(pred_arr, axis=0)
-        std_full = np.pad(std_dev, (1, 0), mode='edge')
-        return np.clip(std_full / self.epistemic_scale_, 0.0, 1.0)
+        return np.pad(std_dev, (1, 0), mode='edge')
 
-    def compute_aleatoric(self, X_series):
+    def _raw_aleatoric(self, X_series):
         X = np.asarray(X_series, dtype=float)
         if self.base_model is None or self.sensor_residual_std_ is None:
             diffs = np.diff(X, axis=0)
             diffs = np.vstack([diffs[:1], diffs])
-            diff_sd = np.std(diffs, axis=0) + 1e-6
+            diff_sd = self.diff_sd if self.diff_sd is not None else (np.std(diffs, axis=0) + 1e-6)
             aleatoric = np.mean((diffs / diff_sd)**2, axis=1)
-            p99 = np.percentile(aleatoric, 99)
-            return np.clip(aleatoric / (p99 if p99 > 0 else 1.0), 0.0, 1.0)
+            return aleatoric
             
         pred = self.base_model.predict(X[:-1])
         res = X[1:] - pred
         res_std = res / self.sensor_residual_std_
         aleatoric = np.mean(res_std**2, axis=1)
-        aleatoric_full = np.pad(aleatoric, (1, 0), mode='edge')
-        return np.clip(aleatoric_full / self.aleatoric_scale_, 0.0, 1.0)
+        return np.pad(aleatoric, (1, 0), mode='edge')
+
+    def compute_epistemic(self, X_series):
+        raw = self._raw_epistemic(X_series)
+        scale = self.epistemic_scale_ if self.epistemic_scale_ is not None else (self.p99_epi if self.p99_epi is not None else 1.0)
+        return np.clip(raw / (scale if scale > 0 else 1.0), 0.0, 1.0)
+
+    def compute_aleatoric(self, X_series):
+        raw = self._raw_aleatoric(X_series)
+        scale = self.aleatoric_scale_ if self.aleatoric_scale_ is not None else (self.p99_ale if self.p99_ale is not None else 1.0)
+        return np.clip(raw / (scale if scale > 0 else 1.0), 0.0, 1.0)
+
 
     def compute_uqs(self, X_series, alpha_epistemic=None):
         """Dual uncertainty: combines epistemic ensemble variance with aleatoric telemetry jitter."""
