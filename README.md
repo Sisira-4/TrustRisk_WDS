@@ -22,7 +22,7 @@ By evaluating incoming detection residuals through a tripartite **Trust-Gating E
    - **Pointwise Precision & Recall**: Precision **0.9677**, Recall **0.7371** (300 / 407 attack hours detected; 107 attack hours missed during accumulation phases)
    - **Point-Adjusted F1**: **0.9879** (Precision: 0.9760, Recall: 1.0000)
    - **ROC-AUC**: **0.9180** | **PR-AUC**: **0.8684**
-5. **Physical Consequence Grounding**: We demonstrate that graph betweenness centrality alone fails to predict hydraulic consequence ($\rho = +0.0932, p = 0.600$), whereas our Cyber-Physical Base Risk strongly correlates with simulated pressure deficits ($\rho = \mathbf{+0.6752}, p = 1.18 \times 10^{-5}$).
+5. **Physical Consequence Grounding & Non-Circularity**: We demonstrate that pure graph topological centrality alone fails to predict hydraulic consequence ($\rho = +0.0932, p = 0.600$), whereas our non-circular Cyber-Physical Base Risk strongly correlates with independent customer service disruption ($\rho = \mathbf{+0.5805}, p = 3.20 \times 10^{-4}$ vs. Affected Nodes; composite $\rho = \mathbf{+0.6109}, p = 1.24 \times 10^{-4}$ vs. ISS). Under 1,000 random weight perturbations ($\pm 20\%$), ranking stability yields mean Kendall's $\tau = \mathbf{0.9859}$.
 
 ---
 
@@ -86,7 +86,7 @@ The TrustRisk-WDS framework evaluates strictly on the Battle of the Attack Detec
 | **Table 2** | **Frozen Detector Evaluation** | `results/v3/test_report.json` | Pointwise F1 = 0.8368, PA F1 = 0.9879, 7/7 attacks detected, 3 false alarms in 12.4 weeks. |
 | **Table 2d** | **Identical-Protocol Baselines** | `experiments/run_baseline_comparison.py` | Evaluates LSTM-AE ($F_1=0.2306$), LightGBM ($F_1=0.7116$), Physical-GNN ($F_1=0.2282$), vs. Ridge ($F_1=0.8368$). |
 | **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.5%); UQS Error AUROC = 0.5994 (95% CI: [0.5460, 0.6485]); ERS discriminates attacks (0.9876) vs. false alarms (0.9211). |
-| **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6752$ ($p = 1.18 \times 10^{-5}$); MDCI $\rho = +0.4521$ ($p = 7.27 \times 10^{-3}$); Top-10 Kendall $\tau = 0.9769$; TPPI Pyomo Knapsack ($50k budget, 1 asset; $500k budget, 9 assets). |
+| **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Non-circular Base Risk $\rho = +0.5805$ ($p = 3.20 \times 10^{-4}$ vs Affected Nodes; composite $\rho = +0.6109$ vs ISS); Structural $\rho = +0.0932$ ($p = 0.600$); 1,000-trial Kendall mean $\tau = 0.9859$ (5th%: 0.9572); TPPI Knapsack ($200k, $500k, $1,000k budgets). |
 | **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Routes 3 of 3 false-alarm events to review queue (100.0% reduction in Action FA); preserves 7/7 attacks; mean operational response delay = 6.57h (Policy 3), 5.71h (Policy 4), 6.86h (Policy 5). |
 | **Figures 1–5** | **Publication-Grade Visualizations** | `experiments/generate_publication_figures.py` | Data Card timeline (`fig1`), Calibration diagram (`fig2`), UQS/ERS dynamics (`fig3`), WNTR scatter (`fig4`), Triage trade-off (`fig5`). |
 

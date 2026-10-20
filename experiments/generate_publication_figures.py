@@ -227,45 +227,47 @@ def plot_fig4_hydraulic_risk():
     
     risk_csv = RESULTS_DIR / "risk_assets_report.csv"
     if risk_csv.exists():
-        df_risk = pd.read_csv(risk_csv).dropna(subset=["ISS", "Structural_Criticality", "Base_Risk"])
+        df_risk = pd.read_csv(risk_csv).dropna(subset=["ISS", "Structural_Criticality", "Base_Risk", "Affected_Nodes"])
         iss = df_risk["ISS"].values
         structural = df_risk["Structural_Criticality"].values
         base_risk = df_risk["Base_Risk"].values
+        affected_nodes = df_risk["Affected_Nodes"].values
         
         rho1, p1 = spearmanr(structural, iss)
-        rho2, p2 = spearmanr(base_risk, iss)
+        rho2, p2 = spearmanr(base_risk, affected_nodes)
     else:
         iss = np.array([1.000, 0.776, 0.482, 0.837, 0.388, 0.750])
         structural = np.array([0.05, 0.02, 0.15, 0.01, 0.25, 0.03])
         base_risk = np.array([0.975, 0.686, 0.565, 0.550, 0.528, 0.515])
+        affected_nodes = np.array([140, 9, 5, 0, 4, 1])
         rho1, p1 = 0.0932, 0.600
-        rho2, p2 = 0.6752, 1.18e-5
+        rho2, p2 = 0.5805, 3.20e-4
 
-    # Panel A: Structural Criticality
+    # Panel A: Structural Criticality (Honest Negative Finding)
     ax1.scatter(structural, iss, color="#e74c3c", s=60, edgecolors="black", alpha=0.85)
     if len(structural) > 1:
         m1, b1 = np.polyfit(structural, iss, 1)
         ax1.plot(structural, m1*structural + b1, color="#c0392b", linestyle="--", linewidth=1.5,
                  label=rf"Trend ($\rho = \mathbf{{{rho1:+.4f}}}$, $p = {p1:.3f}$)")
-    ax1.set_xlabel("Graph Structural Criticality")
+    ax1.set_xlabel("Graph Structural Centrality")
     ax1.set_ylabel("Physical Hydraulic Consequence (ISS)")
-    ax1.set_title("(a) Pure Structural Topology")
+    ax1.set_title("(a) Pure Structural Centrality (Negative Finding)")
     ax1.legend(loc="upper right", frameon=True)
     ax1.grid(True, linestyle="--", alpha=0.5)
     
-    # Panel B: Cyber-Physical Base Risk
-    ax2.scatter(base_risk, iss, color="#2980b9", s=60, edgecolors="black", alpha=0.85)
+    # Panel B: Non-Circular Cyber-Physical Risk vs. Spatial Impact Footprint
+    ax2.scatter(base_risk, affected_nodes, color="#2980b9", s=60, edgecolors="black", alpha=0.85)
     if len(base_risk) > 1:
-        m2, b2 = np.polyfit(base_risk, iss, 1)
+        m2, b2 = np.polyfit(base_risk, affected_nodes, 1)
         ax2.plot(base_risk, m2*base_risk + b2, color="#1b4f72", linestyle="--", linewidth=1.5,
                  label=rf"Trend ($\rho = \mathbf{{{rho2:+.4f}}}$, $p = {p2:.2e}$)")
     ax2.set_xlabel("Cyber-Physical Base Risk (TDCRI)")
-    ax2.set_ylabel("Physical Hydraulic Consequence (ISS)")
-    ax2.set_title("(b) Cyber-Physical Risk Grounding")
+    ax2.set_ylabel("Customer Impact (Affected Nodes)")
+    ax2.set_title("(b) Non-Circular Risk Grounding")
     ax2.legend(loc="upper left", frameon=True)
     ax2.grid(True, linestyle="--", alpha=0.5)
     
-    plt.suptitle("Figure 4: Physics-Grounded Hydraulic Consequence vs. Graph Topology", y=1.02)
+    plt.suptitle("Figure 4: Physical Hydraulic Consequence vs. Graph Topology & Non-Circular Risk", y=1.02)
     
     out_path = FIG_DIR / "fig4_hydraulic_risk_scatter.png"
     plt.savefig(out_path)

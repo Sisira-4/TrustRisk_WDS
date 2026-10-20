@@ -63,18 +63,28 @@ class TDCRICalculator:
     def test_ranking_sensitivity_kendall(
         self,
         df: pd.DataFrame,
-        top_k: int = 10,
-        n_trials: int = 50,
+        top_k: int = 5,
+        n_trials: int = 1000,
         perturbation_range: float = 0.20,
         seed: int = 42
-    ) -> Tuple[float, float, List[float]]:
+    ) -> Tuple[float, float, Dict[str, Any]]:
         """
-        Tests ranking stability under +/-20% perturbations on all weights.
-        Returns (mean_tau, min_tau, list_of_taus).
+        Tests ranking stability under random perturbations on all weights.
+        Draws n_trials random weight vectors within +/- perturbation_range of nominal,
+        re-normalises to sum to 1.0, recomputes the full ranking over all assets,
+        and computes Kendall's tau between the nominal ranking and perturbed ranking.
+        Also tracks top-k retention frequency for each asset.
+        
+        Returns:
+            (mean_tau, min_tau, details_dict)
         """
         rng = np.random.RandomState(seed)
         base_scores = self.compute_tdcri(df)
-        base_ranking = list(df.assign(score=base_scores).sort_values(by="score", ascending=False)["Asset_ID"].head(top_k))
+        base_ranking = stats.rankdata(-base_scores.values, method="average")
+        
+        # Nominal top-k assets
+        sorted_indices = np.argsort(-base_scores.values)
+        nominal_top_k = df.iloc[sorted_indices[:top_k]]["Asset_ID"].tolist()
         
         base_weights = np.array([
             self.w_mdci, self.w_ass, self.w_iss,
@@ -82,36 +92,60 @@ class TDCRICalculator:
         ])
         
         taus = []
+        top_k_counts = {asset_id: 0 for asset_id in df["Asset_ID"]}
+        
+        ars_val = df["ARS"].values if "ARS" in df.columns else np.full(len(df), 0.50)
+        ts_val = df["TS"].values if "TS" in df.columns else np.full(len(df), 0.90)
+        mdci_val = df["MDCI"].values
+        ass_val = df["ASS"].values
+        iss_val = df["ISS"].values
+        cri_val = df["CRI"].values
+        
         for _ in range(n_trials):
             # Perturb each weight independently by [-perturbation_range, +perturbation_range]
             delta = rng.uniform(-perturbation_range, perturbation_range, size=len(base_weights))
             pert_w = base_weights * (1.0 + delta)
-            pert_w = pert_w / pert_w.sum() # renormalize
-            
-            ars_val = df["ARS"] if "ARS" in df.columns else 0.50
-            ts_val = df["TS"] if "TS" in df.columns else 0.90
+            pert_w = pert_w / pert_w.sum()  # renormalize to sum to 1.0
             
             pert_score = (
-                pert_w[0] * df["MDCI"] +
-                pert_w[1] * df["ASS"] +
-                pert_w[2] * df["ISS"] +
-                pert_w[3] * df["CRI"] +
+                pert_w[0] * mdci_val +
+                pert_w[1] * ass_val +
+                pert_w[2] * iss_val +
+                pert_w[3] * cri_val +
                 pert_w[4] * (1.0 - ars_val) +
                 pert_w[5] * ts_val
             )
             
-            pert_ranking = list(df.assign(score=pert_score).sort_values(by="score", ascending=False)["Asset_ID"].head(top_k))
+            pert_ranking = stats.rankdata(-pert_score, method="average")
+            tau, _ = stats.kendalltau(base_ranking, pert_ranking)
+            taus.append(float(tau) if not np.isnan(tau) else 1.0)
             
-            # Rank positions for Kendall tau
-            rank_base = [base_ranking.index(x) if x in base_ranking else top_k + 5 for x in base_ranking]
-            rank_pert = [pert_ranking.index(x) if x in pert_ranking else top_k + 5 for x in base_ranking]
-            
-            tau, _ = stats.kendalltau(rank_base, rank_pert)
-            if not np.isnan(tau):
-                taus.append(float(tau))
-            else:
-                taus.append(1.0)
+            # Record top-k occurrences
+            pert_sorted = np.argsort(-pert_score)
+            for idx in pert_sorted[:top_k]:
+                top_k_counts[df.iloc[idx]["Asset_ID"]] += 1
                 
-        mean_tau = float(np.mean(taus))
-        min_tau = float(np.min(taus))
-        return mean_tau, min_tau, taus
+        taus_arr = np.array(taus)
+        mean_tau = float(np.mean(taus_arr))
+        std_tau = float(np.std(taus_arr))
+        p5_tau = float(np.percentile(taus_arr, 5))
+        p95_tau = float(np.percentile(taus_arr, 95))
+        min_tau = float(np.min(taus_arr))
+        max_tau = float(np.max(taus_arr))
+        
+        top_k_freq = {k: v / float(n_trials) for k, v in top_k_counts.items() if v > 0}
+        
+        stats_dict = {
+            "mean_tau": mean_tau,
+            "std_tau": std_tau,
+            "p5_tau": p5_tau,
+            "p95_tau": p95_tau,
+            "min_tau": min_tau,
+            "max_tau": max_tau,
+            "taus": taus,
+            "n_trials": n_trials,
+            "top_k": top_k,
+            "nominal_top_k": nominal_top_k,
+            "top_k_frequencies": top_k_freq
+        }
+        return mean_tau, min_tau, stats_dict

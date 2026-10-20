@@ -11,7 +11,7 @@
 
 Industrial Control Systems (ICS) and municipal Water Distribution Systems (WDS) face sophisticated cyber-physical attacks designed to manipulate hydraulic actuators, deplete storage tanks, and contaminate supply lines. While state-of-the-art anomaly detectors achieve high detection recall, their real-world operational adoption is severely bottlenecked by **alert fatigue**: even a modest false-alarm rate translates into frequent, disruptive actuator shutdowns and unnecessary emergency field dispatches. Furthermore, conventional alert systems treat every anomaly uniformly, ignoring the underlying physical consequence and hydraulic criticality of affected assets.
 
-In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical security framework centered on **Trust-Gated Alert Triage** and **Physics-Grounded Hydraulic Risk Prioritization**. Our core contribution is an alert triage engine that evaluates every raw anomaly through orthogonal trust dimensions: calibrated attack probability via Platt scaling ($PCS$), ensemble epistemic uncertainty quantification ($UQS$), explanation reliability ($ERS$) via exact Linear SHAP background stability, and causal historical reliability ($HRS$). Concurrently, we introduce a hydraulic consequence layer driven by extended-period simulation in WNTR (EPANET), demonstrating that pure topological graph centrality fails to predict physical damage ($\rho = 0.0932, p = 0.600$), whereas our physics-grounded Cyber-Physical Base Risk strongly correlates with empirical pressure deficits ($\rho = +0.6752, p = 1.18e-05$).
+In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical security framework centered on **Trust-Gated Alert Triage** and **Physics-Grounded Hydraulic Risk Prioritization**. Our core contribution is an alert triage engine that evaluates every raw anomaly through orthogonal trust dimensions: calibrated attack probability via Platt scaling ($PCS$), ensemble epistemic uncertainty quantification ($UQS$), explanation reliability ($ERS$) via exact Linear SHAP background stability, and causal historical reliability ($HRS$). Concurrently, we introduce a hydraulic consequence layer driven by extended-period simulation in WNTR (EPANET), demonstrating that pure topological graph centrality fails to predict physical damage ($\rho = 0.0932, p = 0.600$), whereas our non-circular Cyber-Physical Base Risk strongly correlates with independent customer service disruption ($\rho = +0.5805, p = 3.20e-04$ vs. Affected Nodes; composite $\rho = +0.6109, p = 1.24e-04$ vs. ISS).
 
 On the official, quarantined BATADAL test benchmark (2,089 hours, 7 cyber-physical attacks), evaluated under frozen detector hyperparameters:
 
@@ -172,35 +172,48 @@ where:
 
 | Rank | Asset ID | Component Type | Structural Criticality | Hydraulic Impact ($ISS$) | Cascading Reach ($CRI$) | Susceptibility ($ASS$) | Base Risk ($TDCRI$) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1** | **PU2** | Pump | 0.9069 | 1.0000 | 0.2000 | 0.87 | **0.7196** |
-| **2** | **T4** | Tank | 0.7410 | 0.8369 | 0.0000 | 0.75 | **0.6308** |
-| **3** | **T2** | Tank | 0.7453 | 0.7503 | 0.0000 | 0.75 | **0.6208** |
-| **4** | **v1** | Valve | 0.8611 | 0.7762 | 0.0552 | 0.84 | **0.6206** |
-| **5** | **T1** | Tank | 0.7442 | 0.5477 | 0.0000 | 0.75 | **0.5550** |
-| **6** | **V47** | Valve | 0.8522 | 0.4819 | 0.0400 | 0.84 | **0.5405** |
-| **7** | **V45** | Valve | 0.8520 | 0.3884 | 0.0400 | 0.84 | **0.5160** |
-| **8** | **PU6** | Pump | 1.0000 | 0.0500 | 0.0000 | 0.87 | **0.4793** |
-| **9** | **PU9** | Pump | 0.9681 | 0.0500 | 0.0000 | 0.87 | **0.4773** |
-| **10** | **PU8** | Pump | 0.9616 | 0.0500 | 0.0000 | 0.87 | **0.4769** |
+| **1** | **PU2** | Pump | 0.9069 | 1.0000 | 0.2000 | 0.87 | **0.6883** |
+| **2** | **T2** | Tank | 0.7453 | 0.7503 | 0.0000 | 0.75 | **0.5989** |
+| **3** | **v1** | Valve | 0.8611 | 0.7762 | 0.0552 | 0.84 | **0.5975** |
+| **4** | **T4** | Tank | 0.7410 | 0.8369 | 0.0000 | 0.75 | **0.5847** |
+| **5** | **T1** | Tank | 0.7442 | 0.5477 | 0.0000 | 0.75 | **0.5833** |
+| **6** | **V47** | Valve | 0.8522 | 0.4819 | 0.0400 | 0.84 | **0.5231** |
+| **7** | **V45** | Valve | 0.8520 | 0.3884 | 0.0400 | 0.84 | **0.5107** |
+| **8** | **PU6** | Pump | 1.0000 | 0.0500 | 0.0000 | 0.87 | **0.5075** |
+| **9** | **PU9** | Pump | 0.9681 | 0.0500 | 0.0000 | 0.87 | **0.5055** |
+| **10** | **PU8** | Pump | 0.9616 | 0.0500 | 0.0000 | 0.87 | **0.5051** |
 
 ### Statistical Validation of Risk Grounding
 
-- **Negative Finding: Failure of Pure Structural Centrality**:
+- **Negative Finding: Inadequacy of Pure Structural Centrality**:
   $$\rho_{\text{Spearman}}(\text{Structural Centrality}, \text{ISS}) = 0.0932 \quad (p = 0.600)$$
-  Demonstrates that pure graph topological betweenness fails to predict physical hydraulic consequence, because major transmission corridors traverse low-demand paths.
-- **Validation of Multi-Dimensional Criticality and Cyber-Physical Risk**:
-  $$\rho_{\text{Spearman}}(\text{MDCI}, \text{ISS}) = \mathbf{+0.4521} \quad (p = 0.0073)$$
-  $$\rho_{\text{Spearman}}(\text{Base Risk}, \text{ISS}) = \mathbf{+0.6752} \quad (p = 1.18e-05)$$
-  Confirms that physics-grounded consequence modeling strongly aligns with empirical hydraulic disruptions.
-- **Weight Perturbation Sensitivity**: Under $\pm 20\%$ perturbations across all weights, Kendall's rank correlation on the Top-10 assets remains invariant: $\tau = \mathbf{0.9769}$ (minimum single-weight perturbation $\tau = 0.9556$).
+  Demonstrates that pure graph topological betweenness and closeness fail to predict physical hydraulic consequence, because major transmission corridors traverse low-demand paths despite immense downstream hydraulic impact.
+- **Non-Circular Multi-Dimensional Criticality (MDCI) Validation**:
+  $$\rho_{\text{Spearman}}(\text{Non-Circular MDCI}, \text{ISS}) = \mathbf{+0.1300} \quad (p = 0.4638)$$
+  Evaluated purely from intrinsic engineering design ratings (tank storage capacity, pump power, valve diameter, junction base demand) with zero simulation inputs.
+- **Non-Circular Risk Validation Against Independent Spatial Customer Footprint**:
+  $$\rho_{\text{Spearman}}(\text{Base Risk}, \text{Customer Impact Footprint (Affected Nodes)}) = \mathbf{+0.5805} \quad (p = 3.20e-04)$$
+  $$\rho_{\text{Spearman}}(\text{Base Risk}, \text{ISS}) = \mathbf{+0.6109} \quad (p = 1.24e-04)$$
+  Statistically confirms that physics-grounded consequence modeling strongly aligns with independent customer service disruption footprints without circularity (`Affected Nodes` is an unweighted post-simulation physical consequence measure entirely absent from the Base Risk formula).
+- **Weight Perturbation Sensitivity (1,000 Draws)**: Under 1,000 uniform random weight perturbations ($\pm 20\%$ renormalised across all dimensions) over all 35 assets, ranking stability yields mean Kendall's $\tau = \mathbf{0.9859}$ (std: 0.0133, 5th percentile: 0.9572, min: 0.9501). Top-5 assets (`PU2`, `v1`, `T1`, `T2`, `T4`) retain 100.0% membership across all 1,000 trials.
 
 ### TPPI Security Investment Prioritization (Pyomo 0/1 Knapsack)
 
-Under a municipal capital budget constraint ($B = \$50\text{k}$), Targeted Physical Protection Investment (TPPI) is formulated as a 0/1 knapsack optimization:
+Under municipal capital budget constraints, Targeted Physical Protection Investment (TPPI) is formulated as a 0/1 knapsack optimization:
 
-$$\max \sum_{i=1}^n \text{TPPI}_i x_i \quad \text{subject to} \quad \sum_{i=1}^n \text{Cost}_i x_i \le B, \quad x_i \in \{0, 1\}$$
+$$\max \sum_{i=1}^n \text{TPPI}_i x_i \quad \text{subject to} \quad \sum_{i=1}^n \text{Cost}_i x_i \le B, \quad x_i \in \{0, 1\}
 
-where $\text{TPPI}_i = \frac{\text{TDCRI}_i \cdot \text{Benefit}_i \cdot TS}{\text{Cost}_i}$. Solved with Pyomo and the HiGHS integer solver under baseline municipal budget ($B = \$50\text{k}$), selecting **1 asset** (allocating $40k/$50k); under expanded capital improvement ($B = \$500\text{k}$), prioritizing **9 critical components** (allocating $500k/\$500k).
+where $\text{TPPI}_i = \frac{\text{TDCRI}_i \cdot \text{Benefit}_i \cdot TS}{\text{Cost}_i}$. Ties among components with identical priority densities (e.g. sensor junctions with identical \$40k cost and nominal base demand) are resolved deterministically (density $\to$ absolute value $\to$ asset ID).
+
+#### Multi-Budget Allocation Portfolios ($200k, $500k, $1,000k):
+
+| Budget Tier | Total Spent | Assets Protected | Funded Components | Total Protection Value |
+| :---: | :---: | :---: | :---: | :---: |
+| **\$200k** | \$200k | 4 | v1, J422, J289, J302 | 1.0243 |
+| **\$500k** | \$500k | 9 | v1, J422, J289, J302, J307, J317, J306, T2 (+1 more) | 2.4790 |
+| **\$1000k** | \$1000k | 17 | v1, J422, J289, J302, J307, J317, J306, T2 (+9 more) | 4.7610 |
+
+Under the baseline municipal capital improvement budget ($B = \$500\text{k}$), TPPI funds **9 critical assets** (allocating $500k/\$500k), prioritizing valve `v1`, tank `T2`, valve `V47`, and 6 primary monitored junctions.
 
 ---
 
@@ -281,7 +294,7 @@ The headline scientific contribution is evaluated in a 5-policy comparative tria
 - **Figure 1** (`fig1_data_card_masking.png`): Dataset split timeline, label masking, and +-48h margin quarantine.
 - **Figure 2** (`fig2_calibration_reliability.png`): Platt scaling reliability diagram (Validation ECE 0.0198 -> 0.0052).
 - **Figure 3** (`fig3_uqs_ers_dynamics.png`): UQS vs Error AUROC (0.5994) and ERS attribution stability discrimination.
-- **Figure 4** (`fig4_hydraulic_risk_scatter.png`): Structural topology inadequacy ($\rho = 0.0932$) vs. physics consequence grounding ($\rho = +0.6752$).
+- **Figure 4** (`fig4_hydraulic_risk_scatter.png`): Structural topology inadequacy ($\rho = 0.0932$) vs. physics consequence grounding ($\rho = +0.6109$).
 - **Figure 5** (`fig5_triage_policy_tradeoff.png`): 5-Policy Action false alarm routing to review queue (routes 3 of 3 false-alarm events to review) vs operational response delay trade-off.
 
 ---

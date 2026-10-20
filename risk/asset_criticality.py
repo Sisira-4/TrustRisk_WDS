@@ -74,13 +74,8 @@ class AssetCriticalityEvaluator:
         raw = arterial * (0.60 + 0.40 * (self.w_bw * bw + self.w_cl * cl + self.w_deg * deg))
         return float(np.clip(raw, 0.05, 1.0))
 
-    def compute_operational_criticality(self, asset_id: str, asset_type: str, iss_score: float = None) -> float:
-        """Quantifies operational throughput / demand service capacity."""
-        if iss_score is not None and not (isinstance(iss_score, float) and np.isnan(iss_score)):
-            try:
-                return float(np.clip(float(iss_score), 0.05, 1.0))
-            except (ValueError, TypeError):
-                pass
+    def compute_operational_criticality(self, asset_id: str, asset_type: str) -> float:
+        """Quantifies operational throughput / demand service capacity from intrinsic physical design specifications."""
         if asset_type == "Tank":
             try:
                 tank = self.wn.get_node(asset_id)
@@ -142,10 +137,10 @@ class AssetCriticalityEvaluator:
         }
         return recovery_map.get(asset_type, 0.20)
 
-    def evaluate_asset(self, asset_id: str, asset_type: str, iss_score: float = None) -> Dict[str, float]:
+    def evaluate_asset(self, asset_id: str, asset_type: str) -> Dict[str, float]:
         """Calculates 4 dimensional criticality scores and combined MDCI."""
         s = self.compute_structural_criticality(asset_id, asset_type)
-        o = self.compute_operational_criticality(asset_id, asset_type, iss_score=iss_score)
+        o = self.compute_operational_criticality(asset_id, asset_type)
         m = self.compute_monitoring_criticality(asset_id, asset_type)
         r = self.compute_recovery_complexity(asset_type)
         
@@ -164,8 +159,7 @@ class AssetCriticalityEvaluator:
         """Evaluates MDCI across a dataframe of assets and normalizes structural score."""
         records = []
         for _, row in df_assets.iterrows():
-            iss_val = row.get("ISS", None)
-            rec = self.evaluate_asset(row["Asset_ID"], row["Type"], iss_score=iss_val)
+            rec = self.evaluate_asset(row["Asset_ID"], row["Type"])
             records.append(rec)
             
         res_df = pd.DataFrame(records)

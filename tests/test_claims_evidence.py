@@ -218,17 +218,19 @@ def test_clm_26_platt_bias(artifacts):
 
 
 def test_clm_27_kendall_tau_stability(artifacts):
-    # Kendall tau rank correlation on Top-10 under +-20% perturbation
-    assert "0.9769" in artifacts["readme"]
-    assert "0.9769" in artifacts["manuscript"]
+    # Kendall tau rank correlation under 1,000 weight perturbations (+-20%)
+    assert "0.9859" in artifacts["readme"]
+    assert "0.9859" in artifacts["manuscript"]
 
 
 def test_clm_28_base_risk_spearman_rho(artifacts):
-    valid_risk = artifacts["df_risk"].dropna(subset=["ISS", "Base_Risk"])
-    rho, p = spearmanr(valid_risk["Base_Risk"], valid_risk["ISS"])
-    assert pytest.approx(rho, abs=1e-4) == 0.6752
-    assert "0.6752" in artifacts["readme"]
-    assert "0.6752" in artifacts["manuscript"]
+    valid_risk = artifacts["df_risk"].dropna(subset=["ISS", "Base_Risk", "Affected_Nodes"])
+    rho_spatial, _ = spearmanr(valid_risk["Base_Risk"], valid_risk["Affected_Nodes"])
+    rho_iss, _ = spearmanr(valid_risk["Base_Risk"], valid_risk["ISS"])
+    assert pytest.approx(rho_spatial, abs=1e-4) == 0.5805
+    assert pytest.approx(rho_iss, abs=1e-4) == 0.6109
+    assert "0.5805" in artifacts["readme"]
+    assert "0.5805" in artifacts["manuscript"]
 
 
 def test_clm_29_structural_spearman_rho(artifacts):

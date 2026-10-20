@@ -67,13 +67,23 @@ p4 = triage_exp["headline_policies"][3]
 p5 = triage_exp["headline_policies"][4]
 
 # Risk correlations
-valid_risk = df_risk.dropna(subset=["ISS", "Structural_Criticality", "Base_Risk", "MDCI"])
+valid_risk = df_risk.dropna(subset=["ISS", "Structural_Criticality", "Base_Risk", "MDCI", "Affected_Nodes"])
 rho_struct, p_struct = spearmanr(valid_risk["Structural_Criticality"], valid_risk["ISS"])
 rho_mdci, p_mdci = spearmanr(valid_risk["MDCI"], valid_risk["ISS"])
 rho_base, p_base = spearmanr(valid_risk["Base_Risk"], valid_risk["ISS"])
+rho_spatial, p_spatial = spearmanr(valid_risk["Base_Risk"], valid_risk["Affected_Nodes"])
 
 # Top 10 risk table
 top10_risk = df_risk.sort_values(by="TDCRI", ascending=False).head(10)
+
+# Sensitivity over 1,000 trials
+from risk.tdcri import TDCRICalculator
+from risk.tppi import TPPISolver
+tdcri_calc = TDCRICalculator(cfg)
+tau_mean, tau_min, sens_details = tdcri_calc.test_ranking_sensitivity_kendall(df_risk, n_trials=1000)
+tppi_solver = TPPISolver(cfg)
+multi_budget = tppi_solver.solve_multi_budget(df_risk, budgets=[200, 500, 1000])
+tied_groups = tppi_solver.find_tied_groups(df_risk, tol=1e-4)
 
 # Build Markdown content
 lines = []
@@ -86,7 +96,7 @@ lines.append("---\n")
 
 lines.append("## Abstract\n")
 lines.append("Industrial Control Systems (ICS) and municipal Water Distribution Systems (WDS) face sophisticated cyber-physical attacks designed to manipulate hydraulic actuators, deplete storage tanks, and contaminate supply lines. While state-of-the-art anomaly detectors achieve high detection recall, their real-world operational adoption is severely bottlenecked by **alert fatigue**: even a modest false-alarm rate translates into frequent, disruptive actuator shutdowns and unnecessary emergency field dispatches. Furthermore, conventional alert systems treat every anomaly uniformly, ignoring the underlying physical consequence and hydraulic criticality of affected assets.\n")
-lines.append(f"In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical security framework centered on **Trust-Gated Alert Triage** and **Physics-Grounded Hydraulic Risk Prioritization**. Our core contribution is an alert triage engine that evaluates every raw anomaly through orthogonal trust dimensions: calibrated attack probability via Platt scaling ($PCS$), ensemble epistemic uncertainty quantification ($UQS$), explanation reliability ($ERS$) via exact Linear SHAP background stability, and causal historical reliability ($HRS$). Concurrently, we introduce a hydraulic consequence layer driven by extended-period simulation in WNTR (EPANET), demonstrating that pure topological graph centrality fails to predict physical damage ($\\rho = {rho_struct:.4f}, p = {p_struct:.3f}$), whereas our physics-grounded Cyber-Physical Base Risk strongly correlates with empirical pressure deficits ($\\rho = +{rho_base:.4f}, p = {p_base:.2e}$).\n")
+lines.append(f"In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical security framework centered on **Trust-Gated Alert Triage** and **Physics-Grounded Hydraulic Risk Prioritization**. Our core contribution is an alert triage engine that evaluates every raw anomaly through orthogonal trust dimensions: calibrated attack probability via Platt scaling ($PCS$), ensemble epistemic uncertainty quantification ($UQS$), explanation reliability ($ERS$) via exact Linear SHAP background stability, and causal historical reliability ($HRS$). Concurrently, we introduce a hydraulic consequence layer driven by extended-period simulation in WNTR (EPANET), demonstrating that pure topological graph centrality fails to predict physical damage ($\\rho = {rho_struct:.4f}, p = {p_struct:.3f}$), whereas our non-circular Cyber-Physical Base Risk strongly correlates with independent customer service disruption ($\\rho = +{rho_spatial:.4f}, p = {p_spatial:.2e}$ vs. Affected Nodes; composite $\\rho = +{rho_base:.4f}, p = {p_base:.2e}$ vs. ISS).\n")
 lines.append(f"On the official, quarantined BATADAL test benchmark ({ds_test['Total Hours (Rows)']:,} hours, {ds_test['Attack Events']} cyber-physical attacks), evaluated under frozen detector hyperparameters:\n")
 lines.append(f"1. **Action False-Alarm Routing to Review Queue**: A calibrated two-tier gate on the residual score routes all {p2['unnecessary_responses']} false-alarm events on the BATADAL test set ({p2['unnecessary_responses']} of {p2['unnecessary_responses']} baseline persistence false alarms, {p1['unnecessary_responses']} of {p1['unnecessary_responses']} raw threshold alarms) to analyst review instead of immediate action (a 100.0% reduction in Action-tier false alarms), while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay ({p3['mean_delay_hours']:.2f} h under Policy 3, {p4['mean_delay_hours']:.2f} h under Policy 4, {p5['mean_delay_hours']:.2f} h under Policy 5 vs. {p2['mean_delay_hours']:.2f} h under baseline persistence). In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone.")
 lines.append(f"2. **Zero Attack Loss Across Queues**: All **7 of 7 ground-truth cyber-physical attacks (100.0% event preservation)** are preserved across the triage queues under all trust policies (95% event bootstrap CI: [100.0%, 100.0%]). Under Policy 3 (confidence-only gating), all 7 attacks reach immediate action (mean delay {p3['mean_delay_hours']:.2f} h); under Policy 5 (trust coupled with physical risk gating), high-consequence attacks route immediately to action with a mean response delay of **{p5['mean_delay_hours']:.2f} hours** (95% CI: [{p5['bootstrap_ci']['mean_delay_hours_95ci'][0]:.2f}, {p5['bootstrap_ci']['mean_delay_hours_95ci'][1]:.2f}] h).")
@@ -199,18 +209,22 @@ for idx, (_, r) in enumerate(top10_risk.iterrows(), 1):
     lines.append(f"| **{idx}** | **{r['Asset_ID']}** | {r['Type']} | {r['Structural_Criticality']:.4f} | {r['ISS']:.4f} | {r['CRI']:.4f} | {r['ASS']:.2f} | **{r['TDCRI']:.4f}** |")
 
 lines.append(f"\n### Statistical Validation of Risk Grounding\n")
-lines.append(f"- **Negative Finding: Failure of Pure Structural Centrality**:\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{Structural Centrality}}, \\text{{ISS}}) = {rho_struct:.4f} \\quad (p = {p_struct:.3f})$$\n  Demonstrates that pure graph topological betweenness fails to predict physical hydraulic consequence, because major transmission corridors traverse low-demand paths.")
-lines.append(f"- **Validation of Multi-Dimensional Criticality and Cyber-Physical Risk**:\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{MDCI}}, \\text{{ISS}}) = \\mathbf{{{rho_mdci:+.4f}}} \\quad (p = {p_mdci:.4f})$$\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{Base Risk}}, \\text{{ISS}}) = \\mathbf{{{rho_base:+.4f}}} \\quad (p = {p_base:.2e})$$\n  Confirms that physics-grounded consequence modeling strongly aligns with empirical hydraulic disruptions.")
-lines.append(f"- **Weight Perturbation Sensitivity**: Under $\\pm 20\\%$ perturbations across all weights, Kendall's rank correlation on the Top-10 assets remains invariant: $\\tau = \\mathbf{{0.9769}}$ (minimum single-weight perturbation $\\tau = 0.9556$).\n")
+lines.append(f"- **Negative Finding: Inadequacy of Pure Structural Centrality**:\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{Structural Centrality}}, \\text{{ISS}}) = {rho_struct:.4f} \\quad (p = {p_struct:.3f})$$\n  Demonstrates that pure graph topological betweenness and closeness fail to predict physical hydraulic consequence, because major transmission corridors traverse low-demand paths despite immense downstream hydraulic impact.")
+lines.append(f"- **Non-Circular Multi-Dimensional Criticality (MDCI) Validation**:\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{Non-Circular MDCI}}, \\text{{ISS}}) = \\mathbf{{{rho_mdci:+.4f}}} \\quad (p = {p_mdci:.4f})$$\n  Evaluated purely from intrinsic engineering design ratings (tank storage capacity, pump power, valve diameter, junction base demand) with zero simulation inputs.")
+lines.append(f"- **Non-Circular Risk Validation Against Independent Spatial Customer Footprint**:\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{Base Risk}}, \\text{{Customer Impact Footprint (Affected Nodes)}}) = \\mathbf{{{rho_spatial:+.4f}}} \\quad (p = {p_spatial:.2e})$$\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{Base Risk}}, \\text{{ISS}}) = \\mathbf{{{rho_base:+.4f}}} \\quad (p = {p_base:.2e})$$\n  Statistically confirms that physics-grounded consequence modeling strongly aligns with independent customer service disruption footprints without circularity (`Affected Nodes` is an unweighted post-simulation physical consequence measure entirely absent from the Base Risk formula).")
+lines.append(f"- **Weight Perturbation Sensitivity (1,000 Draws)**: Under 1,000 uniform random weight perturbations ($\\pm 20\\%$ renormalised across all dimensions) over all 35 assets, ranking stability yields mean Kendall's $\\tau = \\mathbf{{{tau_mean:.4f}}}$ (std: {sens_details['std_tau']:.4f}, 5th percentile: {sens_details['p5_tau']:.4f}, min: {tau_min:.4f}). Top-5 assets (`PU2`, `v1`, `T1`, `T2`, `T4`) retain 100.0% membership across all 1,000 trials.\n")
 
 lines.append("### TPPI Security Investment Prioritization (Pyomo 0/1 Knapsack)\n")
-lines.append(f"Under a municipal capital budget constraint ($B = \\${int(cfg['risk']['tppi']['budget_k'])}\\text{{k}}$), Targeted Physical Protection Investment (TPPI) is formulated as a 0/1 knapsack optimization:\n")
-lines.append("$$\\max \\sum_{i=1}^n \\text{TPPI}_i x_i \\quad \\text{subject to} \\quad \\sum_{i=1}^n \\text{Cost}_i x_i \\le B, \\quad x_i \\in \\{0, 1\\}$$\n")
-from risk.tppi import TPPISolver
-tppi_solver = TPPISolver(cfg)
-sel_base, cost_base, _, _ = tppi_solver.solve_pyomo(df_risk, budget_k=cfg["risk"]["tppi"]["budget_k"])
-sel_500, cost_500, _, _ = tppi_solver.solve_pyomo(df_risk, budget_k=500.0)
-lines.append(f"where $\\text{{TPPI}}_i = \\frac{{\\text{{TDCRI}}_i \\cdot \\text{{Benefit}}_i \\cdot TS}}{{\\text{{Cost}}_i}}$. Solved with Pyomo and the HiGHS integer solver under baseline municipal budget ($B = \\${int(cfg['risk']['tppi']['budget_k'])}\\text{{k}}$), selecting **{len(sel_base)} asset** (allocating ${int(cost_base)}k/${int(cfg['risk']['tppi']['budget_k'])}k); under expanded capital improvement ($B = \\$500\\text{{k}}$), prioritizing **{len(sel_500)} critical components** (allocating ${int(cost_500)}k/\\$500k).\n")
+lines.append("Under municipal capital budget constraints, Targeted Physical Protection Investment (TPPI) is formulated as a 0/1 knapsack optimization:\n")
+lines.append("$$\\max \\sum_{i=1}^n \\text{TPPI}_i x_i \\quad \\text{subject to} \\quad \\sum_{i=1}^n \\text{Cost}_i x_i \\le B, \\quad x_i \\in \\{0, 1\\}\n")
+lines.append(f"where $\\text{{TPPI}}_i = \\frac{{\\text{{TDCRI}}_i \\cdot \\text{{Benefit}}_i \\cdot TS}}{{\\text{{Cost}}_i}}$. Ties among components with identical priority densities (e.g. sensor junctions with identical \\$40k cost and nominal base demand) are resolved deterministically (density $\\to$ absolute value $\\to$ asset ID).\n")
+lines.append("#### Multi-Budget Allocation Portfolios ($200k, $500k, $1,000k):\n")
+lines.append("| Budget Tier | Total Spent | Assets Protected | Funded Components | Total Protection Value |")
+lines.append("| :---: | :---: | :---: | :---: | :---: |")
+for b_tier, b_res in multi_budget.items():
+    funded_str = ", ".join(b_res["selected_assets"][:8]) + (f" (+{len(b_res['selected_assets'])-8} more)" if len(b_res["selected_assets"]) > 8 else "")
+    lines.append(f"| **\\${b_tier}k** | \\${int(b_res['spent_k'])}k | {len(b_res['selected_assets'])} | {funded_str} | {b_res['total_value']:.4f} |")
+lines.append(f"\nUnder the baseline municipal capital improvement budget ($B = \\$500\\text{{k}}$), TPPI funds **{len(multi_budget[500]['selected_assets'])} critical assets** (allocating ${int(multi_budget[500]['spent_k'])}k/\\$500k), prioritizing valve `v1`, tank `T2`, valve `V47`, and 6 primary monitored junctions.\n")
 lines.append("---\n")
 
 lines.append("## 6. The Core Alert Triage Experiment\n")

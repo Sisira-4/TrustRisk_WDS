@@ -366,26 +366,40 @@ class HydraulicRiskEngine:
 
         return df
 
-    def validate_mdci_spearman(self, df):
-        """Validates that structural criticality, MDCI, and Base Risk correlate with physical impact (ISS)."""
+    def validate_mdci_spearman(self, df: pd.DataFrame) -> Dict[str, Tuple[float, float]]:
+        """
+        Validates risk ranking metrics using strictly non-circular correlations:
+        1. Pure Graph Structural Centrality vs. Physical Consequence (ISS): honest negative finding.
+        2. Non-circular Multi-Dimensional Criticality (MDCI) vs. Physical Consequence (ISS).
+        3. Cyber-Physical Base Risk vs. Independent Spatial Consequence Footprint (Affected_Nodes).
+        4. Cyber-Physical Base Risk vs. Cumulative Pressure Deficit (ISS) (annotated as composite alignment).
+        """
         rho_struct, p_struct = stats.spearmanr(df["Structural_Criticality"], df["ISS"])
         rho_mdci, p_mdci = stats.spearmanr(df["MDCI"], df["ISS"])
-        rho_risk, p_risk = stats.spearmanr(df["Base_Risk"], df["ISS"])
+        rho_risk_nodes, p_risk_nodes = stats.spearmanr(df["Base_Risk"], df["Affected_Nodes"])
+        rho_risk_iss, p_risk_iss = stats.spearmanr(df["Base_Risk"], df["ISS"])
         return {
             "struct": (float(rho_struct), float(p_struct)),
             "mdci": (float(rho_mdci), float(p_mdci)),
-            "risk": (float(rho_risk), float(p_risk))
+            "risk_spatial": (float(rho_risk_nodes), float(p_risk_nodes)),
+            "risk": (float(rho_risk_iss), float(p_risk_iss))
         }
 
-    def test_weight_sensitivity_kendall(self, df):
-        """Tests ranking stability under weight perturbations using TDCRICalculator."""
+    def test_weight_sensitivity_kendall(self, df: pd.DataFrame, n_trials: int = 1000) -> Tuple[float, List[str], Dict[str, Any]]:
+        """
+        Tests ranking stability under random weight perturbations using TDCRICalculator.
+        Draws n_trials random weight vectors (+/-20% renormalised) across all assets.
+        Returns: (mean_tau, nominal_top_k, details_dict)
+        """
         tdcri_calc = TDCRICalculator(self.config)
-        mean_tau, min_tau, _ = tdcri_calc.test_ranking_sensitivity_kendall(df, top_k=10, n_trials=50, perturbation_range=0.20)
-        base_top10 = list(df.sort_values(by="Base_Risk", ascending=False)["Asset_ID"].head(10))
-        return mean_tau, base_top10, base_top10
+        mean_tau, min_tau, details = tdcri_calc.test_ranking_sensitivity_kendall(
+            df, top_k=5, n_trials=n_trials, perturbation_range=0.20
+        )
+        nominal_top5 = details["nominal_top_k"]
+        return mean_tau, nominal_top5, details
 
-    def solve_tppi_knapsack(self, df, budget_k=500, trust_score=0.90):
-        """Solves 0/1 Knapsack optimization using Pyomo/HiGHS with DP cross-check."""
+    def solve_tppi_knapsack(self, df: pd.DataFrame, budget_k: float = 500, trust_score: float = 0.90):
+        """Solves 0/1 Knapsack optimization using Pyomo/HiGHS with deterministic tie-breaking."""
         tppi_solver = TPPISolver(self.config)
         selected_df, total_cost, total_value, _ = tppi_solver.solve_pyomo(
             df, budget_k=budget_k, trust_score=trust_score
@@ -393,28 +407,45 @@ class HydraulicRiskEngine:
         selected_df["TPPI"] = selected_df["TPPI_Priority_Density"]
         return selected_df, int(total_cost), float(total_value)
 
+    def solve_tppi_multi_budget(self, df: pd.DataFrame, budgets: List[int] = None, trust_score: float = 0.90):
+        """Solves TPPI across multiple municipal budget tiers ($200k, $500k, $1,000k) and identifies tied asset groups."""
+        if budgets is None:
+            budgets = [200, 500, 1000]
+        tppi_solver = TPPISolver(self.config)
+        multi_results = tppi_solver.solve_multi_budget(df, budgets=budgets, trust_score=trust_score)
+        tied_groups = tppi_solver.find_tied_groups(df, tol=1e-4, trust_score=trust_score)
+        return multi_results, tied_groups
+
 
 def main():
     print("Executing Phase 4 Physics-Grounded Hydraulic Simulation & Risk Modeling...")
     engine = HydraulicRiskEngine()
     df_risk = engine.simulate_outages()
     
-    # 1. Spearman Validation
+    # 1. Non-Circular Spearman Validations
     corr_dict = engine.validate_mdci_spearman(df_risk)
     rho_struct, p_struct = corr_dict["struct"]
     rho_mdci, p_mdci = corr_dict["mdci"]
+    rho_spatial, p_spatial = corr_dict["risk_spatial"]
     rho_risk, p_risk = corr_dict["risk"]
-    print(f"Structural vs. Hydraulic Consequence Spearman rho: {rho_struct:.4f} (p={p_struct:.4e})")
-    print(f"MDCI vs. Hydraulic Consequence Spearman rho: {rho_mdci:.4f} (p={p_mdci:.4e})")
-    print(f"Cyber-Physical Base Risk vs. Hydraulic Consequence Spearman rho: {rho_risk:.4f} (p={p_risk:.4e})")
+    print(f"Structural vs. Hydraulic Consequence Spearman rho: {rho_struct:.4f} (p={p_struct:.4e}) [Honest Negative Finding]")
+    print(f"Non-Circular MDCI vs. Hydraulic Consequence Spearman rho: {rho_mdci:.4f} (p={p_mdci:.4e})")
+    print(f"Non-Circular Base Risk vs. Customer Footprint (Affected Nodes) Spearman rho: {rho_spatial:.4f} (p={p_spatial:.4e})")
+    print(f"Cyber-Physical Base Risk vs. Pressure Deficit (ISS) Spearman rho: {rho_risk:.4f} (p={p_risk:.4e})")
     
-    # 2. Kendall tau Sensitivity
-    tau, top_base, top_pert = engine.test_weight_sensitivity_kendall(df_risk)
-    print(f"Top-10 Weight Sensitivity Kendall tau: {tau:.4f}")
+    # 2. Kendall tau Sensitivity over 1,000 Draws
+    tau_mean, top5_base, sens_details = engine.test_weight_sensitivity_kendall(df_risk, n_trials=1000)
+    print(f"1,000-Trial Weight Sensitivity Kendall tau: Mean={sens_details['mean_tau']:.4f}, Std={sens_details['std_tau']:.4f}, 5th%={sens_details['p5_tau']:.4f}, Min={sens_details['min_tau']:.4f}")
+    print(f"Top-5 Asset Retention Frequencies: {sens_details['top_k_frequencies']}")
     
-    # 3. TPPI Knapsack Solved
-    selected_500, spent_500, val_500 = engine.solve_tppi_knapsack(df_risk, budget_k=500, trust_score=0.90)
-    print(f"TPPI 0/1 Knapsack (Budget $500k): Spent ${spent_500}k across {len(selected_500)} assets.")
+    # 3. TPPI Knapsack Multi-Budget & Tied Groups
+    multi_budget, tied_groups = engine.solve_tppi_multi_budget(df_risk, budgets=[200, 500, 1000], trust_score=0.90)
+    selected_500 = multi_budget[500]["selected_df"]
+    spent_500 = multi_budget[500]["spent_k"]
+    val_500 = multi_budget[500]["total_value"]
+    print(f"TPPI 0/1 Knapsack ($500k Nominal): Spent ${spent_500}k across {len(selected_500)} assets.")
+    for b_val, b_info in multi_budget.items():
+        print(f"  Budget ${b_val}k: Funded {b_info['asset_count']} assets (${b_info['spent_k']}k spent, Value {b_info['total_value']:.4f})")
     
     # Save risk assets CSV with deterministic precision rounding
     risk_csv_path = RESULTS_DIR / "risk_assets_report.csv"
@@ -445,22 +476,58 @@ Measured exact physical consequences: **Pressure Deficit** (m$\\cdot$h) and **Af
     report_md += f"""
 ---
 
-## 2. Risk Ranking Validation & Sensitivity Analysis
+## 2. Non-Circular Risk Ranking Validation & Sensitivity Analysis
 - **Negative Finding: Pure Structural Centrality Inadequacy**:
-  $$\\rho(\\text{{Structural Centrality}}, \\text{{Hydraulic Impact ISS}}) = {rho_struct:.4f} \\quad (p = {p_struct:.3f})$$
+  $$\\rho(\\text{{Structural Centrality}}, \\text{{Hydraulic Impact ISS}}) = {rho_struct:+.4f} \\quad (p = {p_struct:.3f})$$
   Demonstrates that pure graph topological centrality (betweenness/closeness) alone fails to predict physical consequences, because transmission corridors have low local demand despite immense downstream hydraulic impact.
-- **Validation of Multi-Dimensional Criticality (MDCI)**:
-  $$\\rho(\\text{{MDCI}}, \\text{{Hydraulic Impact ISS}}) = \\mathbf{{{rho_mdci:+.4f}}} \\quad (p = {p_mdci:.4f})$$
+- **Non-Circular Multi-Dimensional Criticality (MDCI)**:
+  $$\\rho(\\text{{Non-Circular MDCI}}, \\text{{Hydraulic Impact ISS}}) = {rho_mdci:+.4f} \\quad (p = {p_mdci:.3f})$$
+  Evaluated purely from intrinsic engineering design ratings (tank storage volume, pump power, valve diameter, junction base demand) with zero simulation inputs.
+- **Non-Circular Risk Validation Against Independent Spatial Customer Impact**:
+  $$\\rho(\\text{{Cyber-Physical Base Risk}}, \\text{{Customer Impact Footprint (Affected Nodes)}}) = \\mathbf{{{rho_spatial:+.4f}}} \\quad (p = {p_spatial:.2e})$$
+  Statistically validates that our multi-dimensional threat-driven risk formulation strongly predicts the spatial extent of customer service disruption without circularity (`Affected Nodes` is not an input feature to Base Risk).
+- **Composite Risk Grounding (Pressure Deficit Alignment)**:
   $$\\rho(\\text{{Cyber-Physical Base Risk}}, \\text{{Hydraulic Impact ISS}}) = \\mathbf{{{rho_risk:+.4f}}} \\quad (p = {p_risk:.2e})$$
-  Statistically validates that our physics-grounded Cyber-Physical Risk formulation strongly aligns with empirical hydraulic consequences, resolving the "Risk Ranking Accuracy" requirement.
-- **$\\pm 20\\%$ Weight Perturbation Sensitivity (Kendall's $\\tau$)**:
-  $$\\tau(\\text{{Top-10 Baseline}}, \\text{{Top-10 Perturbed}}) = \\mathbf{{{tau:.4f}}}$$
-  Demonstrates perfect ranking stability: the top-tier critical asset hierarchy is immune to subjective $\\pm 20\\%$ weight fluctuations.
 
+- **Empirical Sensitivity Distribution over 1,000 Draws (Kendall's $\\tau$)**:
+  - **Distribution**: Mean $\\tau = \\mathbf{{{sens_details['mean_tau']:.4f}}}$ (Std $= {sens_details['std_tau']:.4f}$, 5th% $= {sens_details['p5_tau']:.4f}$, 95th% $= {sens_details['p95_tau']:.4f}$, Min $= {sens_details['min_tau']:.4f}$, Max $= {sens_details['max_tau']:.4f}$).
+  - **Top-5 Asset Retention Frequency**:
+"""
+    for asset, freq in sorted(sens_details['top_k_frequencies'].items(), key=lambda x: -x[1]):
+        report_md += f"    - **{asset}**: {freq * 100.0:.1f}%\n"
+
+    report_md += f"""
 ---
 
-## 3. TPPI Security Investment Prioritization (0/1 Knapsack)
-Optimal protection allocation under budget constraint ($B = \\$500\\text{{k}}$) using documented unit costs:
+## 3. Threat-Prioritized Protection Investment (TPPI 0/1 Knapsack)
+
+### A. Tied Groups & Deterministic Tie-Breaking
+When components exhibit identical priority densities (e.g. monitored sensor junctions with identical \$40k unit cost and nominal base demand), ties are resolved deterministically by:
+1. Priority Density (Protection Value / Cost)
+2. Absolute Protection Value
+3. Asset ID (lexicographical order)
+
+**Identified Tied Groups**:
+"""
+    if tied_groups:
+        for tg in tied_groups:
+            report_md += f"- **{tg['type']} Group** ({tg['count']} assets: {', '.join(tg['asset_ids'])}): Unit Cost = \\${tg['unit_cost_k']}k, Mean Priority Density = {tg['mean_priority_density']:.6f}\n"
+    else:
+        report_md += "- No identical tie groups detected above threshold.\n"
+
+    report_md += f"""
+### B. Multi-Budget Allocation Sensitivity (\$200k, \$500k, \$1,000k)
+
+| Budget Tier | Total Spent | Assets Protected | Funded Components | Total Value |
+| :---: | :---: | :---: | :---: | :---: |
+"""
+    for b_val in [200, 500, 1000]:
+        b_info = multi_budget[b_val]
+        assets_str = ", ".join(b_info["selected_assets"])
+        report_md += f"| **\\${b_val}k** | \\${b_info['spent_k']}k | {b_info['asset_count']} | {assets_str} | {b_info['total_value']:.4f} |\n"
+
+    report_md += f"""
+### C. Detailed \$500k Baseline Protection Allocation
 
 | Selected Asset | Type | Unit Cost | Protection Benefit | TPPI Priority Score |
 | :---: | :---: | :---: | :---: | :---: |
@@ -481,3 +548,4 @@ Optimal protection allocation under budget constraint ($B = \\$500\\text{{k}}$) 
 
 if __name__ == "__main__":
     main()
+

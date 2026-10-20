@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 import numpy as np
 import pandas as pd
 import pyomo.environ as pyo
@@ -52,7 +52,45 @@ class TPPISolver:
         risk_col = "TDCRI" if "TDCRI" in df_opt.columns else ("Base_Risk" if "Base_Risk" in df_opt.columns else "ISS")
         df_opt["Protection_Value"] = df_opt[risk_col] * df_opt["Protection_Benefit"] * trust_score
         df_opt["TPPI_Priority_Density"] = df_opt["Protection_Value"] / df_opt["Unit_Cost_k"]
+        
+        # Sort deterministically: priority density descending, protection value descending, asset ID ascending
+        df_opt = df_opt.sort_values(
+            by=["TPPI_Priority_Density", "Protection_Value", "Asset_ID"],
+            ascending=[False, False, True]
+        ).reset_index(drop=True)
         return df_opt
+
+    def find_tied_groups(self, df: pd.DataFrame, tol: float = 1e-4, trust_score: float = 0.90) -> List[Dict[str, Any]]:
+        """
+        Identifies and reports groups of assets with near-identical priority density scores.
+        Used for reporting tie clusters (e.g. monitored junctions with identical unit cost and priority).
+        """
+        df_items = self.prepare_assets(df, trust_score=trust_score)
+        densities = df_items["TPPI_Priority_Density"].values
+        n = len(df_items)
+        
+        tied_groups = []
+        visited = set()
+        for i in range(n):
+            if i in visited:
+                continue
+            group_idx = [i]
+            for j in range(i + 1, n):
+                if j in visited:
+                    continue
+                if abs(densities[i] - densities[j]) <= tol and df_items.loc[i, "Unit_Cost_k"] == df_items.loc[j, "Unit_Cost_k"]:
+                    group_idx.append(j)
+            if len(group_idx) > 1:
+                visited.update(group_idx)
+                tied_sub = df_items.iloc[group_idx]
+                tied_groups.append({
+                    "type": tied_sub["Type"].iloc[0],
+                    "asset_ids": tied_sub["Asset_ID"].tolist(),
+                    "unit_cost_k": int(tied_sub["Unit_Cost_k"].iloc[0]),
+                    "mean_priority_density": float(tied_sub["TPPI_Priority_Density"].mean()),
+                    "count": len(group_idx)
+                })
+        return tied_groups
 
     def solve_pyomo(
         self,
@@ -63,6 +101,7 @@ class TPPISolver:
     ) -> Tuple[pd.DataFrame, float, float, str]:
         """
         Solves 0/1 Knapsack optimization using Pyomo with HiGHS solver.
+        Uses deterministic secondary preference to break ties among identical assets.
         Returns: (selected_df, total_cost, total_benefit, solver_status)
         """
         budget = float(budget_k if budget_k is not None else self.default_budget_k)
@@ -73,9 +112,10 @@ class TPPISolver:
         model.I = pyo.RangeSet(0, n - 1)
         model.x = pyo.Var(model.I, within=pyo.Binary)
 
-        # Objective: Maximize sum_{i} Protection_Value[i] * x[i]
+        # Objective: Maximize sum_{i} (Protection_Value[i] + eps * (n - i)) * x[i]
+        # Infinitesimal perturbation eps = 1e-8 preserves exact values while guaranteeing deterministic tie-breaking
         def obj_rule(m):
-            return sum(float(df_items.loc[i, "Protection_Value"]) * m.x[i] for i in m.I)
+            return sum((float(df_items.loc[i, "Protection_Value"]) + 1e-8 * (n - i)) * m.x[i] for i in m.I)
         model.obj = pyo.Objective(rule=obj_rule, sense=pyo.maximize)
 
         # Budget Constraint: sum_{i} Unit_Cost_k[i] * x[i] <= budget
@@ -107,6 +147,32 @@ class TPPISolver:
         total_value = float(selected_df["Protection_Value"].sum())
         
         return selected_df, total_cost, total_value, status_str
+
+    def solve_multi_budget(
+        self,
+        df: pd.DataFrame,
+        budgets: List[int] = None,
+        trust_score: float = 0.90
+    ) -> Dict[int, Dict[str, Any]]:
+        """
+        Solves TPPI 0/1 Knapsack across multiple municipal budget tiers (e.g., $200k, $500k, $1,000k).
+        Returns a dictionary mapping budget_k -> outcome details.
+        """
+        if budgets is None:
+            budgets = [200, 500, 1000]
+        multi_results = {}
+        for b in budgets:
+            sel_df, cost, val, status = self.solve_pyomo(df, budget_k=b, trust_score=trust_score)
+            multi_results[b] = {
+                "budget_k": b,
+                "spent_k": int(cost),
+                "total_value": float(val),
+                "asset_count": len(sel_df),
+                "selected_assets": sel_df["Asset_ID"].tolist(),
+                "selected_df": sel_df,
+                "solver_status": status
+            }
+        return multi_results
 
     def solve_dynamic_programming(
         self,
