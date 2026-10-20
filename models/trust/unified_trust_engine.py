@@ -282,10 +282,14 @@ class EpistemicUncertaintyQuantifier:
     def _raw_aleatoric(self, X_series):
         X = np.asarray(X_series, dtype=float)
         if self.base_model is None or self.sensor_residual_std_ is None:
+            if not self.fitted or self.diff_sd is None:
+                raise RuntimeError(
+                    "EpistemicUncertaintyQuantifier must be fitted on training data before scoring. "
+                    "Unfitted scoring is prohibited to prevent test data leakage."
+                )
             diffs = np.diff(X, axis=0)
             diffs = np.vstack([diffs[:1], diffs])
-            diff_sd = self.diff_sd if self.diff_sd is not None else (np.std(diffs, axis=0) + 1e-6)
-            aleatoric = np.mean((diffs / diff_sd)**2, axis=1)
+            aleatoric = np.mean((diffs / self.diff_sd)**2, axis=1)
             return aleatoric
             
         pred = self.base_model.predict(X[:-1])
@@ -295,11 +299,21 @@ class EpistemicUncertaintyQuantifier:
         return np.pad(aleatoric, (1, 0), mode='edge')
 
     def compute_epistemic(self, X_series):
+        if not self.fitted:
+            raise RuntimeError(
+                "EpistemicUncertaintyQuantifier must be fitted on training data before scoring. "
+                "Unfitted scoring is prohibited to prevent test data leakage."
+            )
         raw = self._raw_epistemic(X_series)
         scale = self.epistemic_scale_ if self.epistemic_scale_ is not None else (self.p99_epi if self.p99_epi is not None else 1.0)
         return np.clip(raw / (scale if scale > 0 else 1.0), 0.0, 1.0)
 
     def compute_aleatoric(self, X_series):
+        if not self.fitted:
+            raise RuntimeError(
+                "EpistemicUncertaintyQuantifier must be fitted on training data before scoring. "
+                "Unfitted scoring is prohibited to prevent test data leakage."
+            )
         raw = self._raw_aleatoric(X_series)
         scale = self.aleatoric_scale_ if self.aleatoric_scale_ is not None else (self.p99_ale if self.p99_ale is not None else 1.0)
         return np.clip(raw / (scale if scale > 0 else 1.0), 0.0, 1.0)

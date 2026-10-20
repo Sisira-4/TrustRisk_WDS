@@ -62,3 +62,70 @@ def test_uqs_scales_frozen_on_training_data():
     assert quant.epistemic_scale_ == saved_ep_scale
     assert quant.aleatoric_scale_ == saved_al_scale
     assert np.all((uqs_wild >= 0.0) & (uqs_wild <= 1.0))
+
+
+def test_uqs_scoring_first_half_invariant_to_future_data():
+    """Verify Task 3.3: scoring the first half of a test set alone gives the exact same values
+    for those hours as scoring the whole set (no future test-series statistics or lookahead)."""
+    rng = np.random.default_rng(42)
+    T_train, N = 500, 4
+    X_train = rng.normal(10, 2, size=(T_train, N))
+
+    quant = EpistemicUncertaintyQuantifier(n_estimators=5, block_size=24)
+    quant.fit(X_train)
+
+    T_test = 300
+    X_test = rng.normal(12, 3, size=(T_test, N))
+
+    # Score full test set
+    uqs_full = quant.compute_uqs(X_test)
+    epi_full = quant.compute_epistemic(X_test)
+    ale_full = quant.compute_aleatoric(X_test)
+
+    # Score first half alone
+    half = T_test // 2
+    X_half = X_test[:half]
+    uqs_half = quant.compute_uqs(X_half)
+    epi_half = quant.compute_epistemic(X_half)
+    ale_half = quant.compute_aleatoric(X_half)
+
+    # Verify bitwise invariance on first half hours
+    np.testing.assert_allclose(epi_half, epi_full[:half], atol=1e-12, err_msg="Epistemic scores must not depend on future hours")
+    np.testing.assert_allclose(ale_half, ale_full[:half], atol=1e-12, err_msg="Aleatoric scores must not depend on future hours")
+    np.testing.assert_allclose(uqs_half, uqs_full[:half], atol=1e-12, err_msg="UQS dual uncertainty must not depend on future hours")
+
+
+def test_uqs_batadal_test_set_first_half_invariant():
+    """Verify Task 3.3 on real BATADAL test set: scoring first half produces identical values to full test set."""
+    test_csv = ROOT / "data" / "processed" / "test_processed.csv"
+    train_csv = ROOT / "data" / "processed" / "train_processed.csv"
+    if not (test_csv.exists() and train_csv.exists()):
+        pytest.skip("Processed BATADAL datasets not found.")
+
+    import pandas as pd
+    train_df = pd.read_csv(train_csv)
+    test_df = pd.read_csv(test_csv)
+    sensor_cols = [c for c in train_df.columns if c not in ["DATETIME", "LABEL", "TRAIN_MASK", "EVAL_MASK"]]
+
+    quant = EpistemicUncertaintyQuantifier(n_estimators=5, block_size=168)
+    quant.fit(train_df[sensor_cols].values)
+
+    X_test = test_df[sensor_cols].values
+    uqs_full = quant.compute_uqs(X_test)
+
+    half = len(X_test) // 2
+    uqs_half = quant.compute_uqs(X_test[:half])
+
+    np.testing.assert_allclose(uqs_half, uqs_full[:half], atol=1e-12, err_msg="BATADAL test UQS must not depend on future test hours")
+
+
+def test_uqs_unfitted_scoring_raises_error():
+    """Verify that calling compute functions before fit() raises RuntimeError to prevent un-normalized leakage."""
+    quant = EpistemicUncertaintyQuantifier()
+    X = np.ones((50, 4))
+    with pytest.raises(RuntimeError, match="must be fitted"):
+        quant.compute_uqs(X)
+    with pytest.raises(RuntimeError, match="must be fitted"):
+        quant.compute_epistemic(X)
+    with pytest.raises(RuntimeError, match="must be fitted"):
+        quant.compute_aleatoric(X)
