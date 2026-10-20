@@ -388,9 +388,14 @@ def main(argv=None):
         json.dump(json_out, f, indent=2)
     print(f">> Saved core alert triage experiment JSON to {out_json_path}")
 
-    p4_info = policies_summary[3]
-    p4_ci = p4_info["bootstrap_ci"]
+    p1_info = policies_summary[0]
     p2_info = policies_summary[1]
+    p3_info = policies_summary[2]
+    p4_info = policies_summary[3]
+    p5_info = policies_summary[4]
+    p4_ci = p4_info["bootstrap_ci"]
+    delay_cost_p3 = float(p3_info["mean_delay_hours"]) - float(p2_info["mean_delay_hours"])
+    delay_cost_p5 = float(p5_info["mean_delay_hours"]) - float(p2_info["mean_delay_hours"])
 
     md_content = f"""# Core Experiment: Trust-Gated Alert Triage Results (Phase 5 & D3)
 
@@ -425,7 +430,10 @@ def main(argv=None):
 
 ## 2. Core Empirical Contribution Statement
 > **Empirical Paper Headline Claim**:  
-> *"On the official BATADAL test benchmark (2,089 hours, 7 attack events, 3 baseline false-alarm events), trust-gated alert triage (Policy 4) diverts **all 3 false-alarm events** away from the immediate-action tier (a **100% reduction**, 95% event-level bootstrap CI: [66.7%, 100.0%], sample size $N=3$ events) while preserving **7 of 7 attacks** across action and human-review queues (100% preservation, 95% CI: [100.0%, 100.0%]) with a mean response delay of **{p4_info['mean_delay_hours']} hours** (95% CI: [{p4_ci['mean_delay_hours_95ci'][0]}, {p4_ci['mean_delay_hours_95ci'][1]}] h). Policy 5 (integrating hydraulic criticality $R_{{\\text{{phys}}}}$) routes high-consequence attacks with lower delay (mean **{policies_summary[4]['mean_delay_hours']} hours**) while maintaining zero action-tier false alarms."*
+> *"A calibrated two-tier gate on the residual score routes all {p2_info['unnecessary_responses']} false-alarm events on the BATADAL test set to analyst review instead of immediate action, while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay ({p3_info['mean_delay_hours']:.2f} h under Policy 3, {p4_info['mean_delay_hours']:.2f} h under Policy 4, {p5_info['mean_delay_hours']:.2f} h under Policy 5 vs. {p2_info['mean_delay_hours']:.2f} h under baseline persistence). In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone."*
+
+> **Sample Size Context & Validation Cross-Evidence**:  
+> The baseline persistence policy produces exactly $N={p2_info['unnecessary_responses']}$ false-alarm events outside attack windows on the official test set ({p2_info['action_fa_rate_week']:.2f} events/week over 12.4 weeks), which permits no meaningful asymptotic confidence interval. Supporting validation evidence from Dataset 04 5-fold cross-validation across held-out operational data shows 8 Action FA events under Persistence vs. 4 under Policy 4 and 13 under Policy 3 (all preserving 5/5 attacks).
 
 ---
 
@@ -448,14 +456,18 @@ def main(argv=None):
     for _, r in df_ablation.iterrows():
         md_content += f"| **{r['Configuration']}** | **{r['Attacks Preserved']}** | {r['Attacks in Action Tier']} | **{r['Unnecessary Responses (Action FA)']}** | {r['Review Queue FA Events']} | {r['Mean Delay (h)']} |\n"
 
+    ab_pcs = df_ablation[df_ablation['Configuration'].str.contains('Ablate PCS')].iloc[0]
+    ab_uqs = df_ablation[df_ablation['Configuration'].str.contains('Ablate UQS')].iloc[0]
+    ab_ers = df_ablation[df_ablation['Configuration'].str.contains('Ablate ERS')].iloc[0]
+
     md_content += f"""
 ---
 
 ## 5. Key Scientific Insights & Negative Findings
-1. **Critical Role of Probability Calibration (PCS)**: Ablating PCS severely degrades alert triage, causing **{df_ablation[df_ablation['Configuration'].str.contains('Ablate PCS')]['Attacks Lost'].values[0]} attacks to be completely lost** and inflating mean detection delay from {p4_info['mean_delay_hours']}h to {df_ablation[df_ablation['Configuration'].str.contains('Ablate PCS')]['Mean Delay (h)'].values[0]}h. Platt temperature scaling is essential to convert raw residual z-scores into calibrated physical anomaly probabilities.
-2. **Epistemic Uncertainty Suppression (UQS)**: Ablating UQS introduces false alarms into the human review queue. The moving-block bootstrap ensemble variance effectively flags transient sensor instability that lacks persistent model consensus.
-3. **Latency vs. False Alarm Trade-off**: Trust validation introduces an average delay trade-off ({float(p4_info['mean_delay_hours']) - float(p2_info['mean_delay_hours']):.1f} hours) for stealthy low-magnitude attacks while responding rapidly for overt attacks. Policy 5 resolves this trade-off by fast-tracking alerts occurring at high-criticality assets ({policies_summary[4]['mean_delay_hours']}h mean delay).
-4. **Honest Small-Sample Caveat**: Baseline persistence produces exactly 3 false-alarm events outside attack windows on the official test set. While Policy 4 eliminates all 3 events from Action, the small sample size dictates that the true population false-alarm elimination rate is bounded within the 95% event bootstrap CI of [66.7%, 100.0%].
+1. **Calibrated Confidence (PCS) Dominates on BATADAL**: A calibrated probability cutoff (PCS $\\ge 0.85$, Policy 3) routes all {p2_info['unnecessary_responses']} of {p2_info['unnecessary_responses']} test false-alarm events to the review queue (0 Action FA) while allowing all 7/7 attacks to reach the immediate action tier with a mean delay of {p3_info['mean_delay_hours']:.2f} h (an additional {delay_cost_p3:.2f} h latency over persistence). Because PCS is a monotone transform of the detector score (Spearman $\\rho = 0.998$ on alarm hours), Policy 3 acts as an effective calibrated score filter.
+2. **Negative Finding on Multi-Term Trust in this Benchmark**: Multi-term trust score weighting (Policy 4) demotes 6 attacks from Action to Review (leaving only {p4_info['attacks_action']}/7 attacks in the Action tier) without reducing Action false alarms beyond what PCS alone achieves (both achieve 0 Action FA). Furthermore, on this dataset, epistemic uncertainty (UQS) is higher on true-attack alarms than on false alarms, so penalizing uncertainty penalizes true attacks. In this benchmark, uncertainty (UQS) and explanation-reliability (ERS) terms gave no measurable benefit over calibrated confidence alone.
+3. **Ablation Sensitivities**: Ablating PCS completely loses {ab_pcs['Attacks Lost']} of 7 attacks and increases mean delay to {ab_pcs['Mean Delay (h)']:.2f} h. Ablating ERS loses {ab_ers['Attacks Lost']} attacks and inflates delay to {ab_ers['Mean Delay (h)']:.2f} h. Ablating UQS preserves {ab_uqs['Attacks Preserved']} attacks with {ab_uqs['Attacks in Action Tier']} in action and {ab_uqs['Review Queue FA Events']} review FA events.
+4. **Honest Sample Size Caveat & Validation Cross-Evidence**: The test set baseline exhibits exactly $N={p2_info['unnecessary_responses']}$ false-alarm events, which permits no meaningful asymptotic confidence interval. Rather than asserting blanket elimination, the empirical finding is that the gate routes 3 of 3 false-alarm events to analyst review. On Dataset 04 5-fold cross-validation, Action FA events were 8 under Persistence, 13 under Policy 3, and 4 under Policy 4 (all preserving 5/5 attacks).
 """
     out_md_path = RESULTS_DIR / "core_triage_experiment.md"
     out_md_path.write_text(md_content, encoding="utf-8")

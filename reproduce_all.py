@@ -5,7 +5,7 @@ Reproduces all empirical tables and findings in the manuscript in a single execu
 - Table 2: Frozen Residual Detector Evaluation (Pointwise vs. Point-Adjusted)
 - Table 3: Calibration & Trust Metrics (ECE, Brier, NLL, UQS AUROC, ERS dynamics)
 - Table 4: Hydraulic Consequence & Cyber-Physical Risk Validation (WNTR simulation, Spearman rho, TPPI)
-- Table 5: Controlled Alert Triage 5-Policy Evaluation Matrix (Action vs. Review queues, FA elimination)
+- Table 5: Controlled Alert Triage 5-Policy Evaluation Matrix (Action vs. Review queues, FA routing)
 
 Usage:
     python reproduce_all.py

@@ -5,7 +5,7 @@ Outputs vector/high-res PNG figures into results/figures/:
 2. fig2_calibration_reliability.png: Platt scaling reliability diagram (ECE 0.0198 -> 0.0052).
 3. fig3_uqs_ers_dynamics.png: UQS vs Error AUROC (0.5850) and ERS dynamic discrimination.
 4. fig4_hydraulic_risk_scatter.png: Graph centrality failure (rho = -0.1932) vs. Base Risk (rho = +0.6158).
-5. fig5_triage_policy_tradeoff.png: False alarm elimination (100%) vs. operational response delay.
+5. fig5_triage_policy_tradeoff.png: Action-tier false alarm routing to review queue (routes 3 of 3 false-alarm events to review) vs. operational response delay.
 """
 from pathlib import Path
 import json
@@ -308,7 +308,7 @@ def plot_fig5_triage_tradeoff():
     
     ax1.set_xticks(x)
     ax1.set_xticklabels(policies, fontweight="bold")
-    ax1.set_title("Figure 5: Alert Triage 5-Policy Matrix (False Alarm Elimination vs. Latency Trade-Off)")
+    ax1.set_title("Figure 5: Alert Triage 5-Policy Matrix (Action FA Routing to Review Queue vs. Latency Trade-Off)")
     
     # Combined legend
     lines, labels = ax1.get_legend_handles_labels()

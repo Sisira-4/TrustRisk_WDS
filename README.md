@@ -14,14 +14,15 @@ By evaluating incoming detection residuals through a tripartite **Trust-Gating E
 
 ## Headline Findings on Official Quarantined BATADAL Test Benchmark (2,089 Hours)
 
-1. **100.0% False-Alarm Event Elimination in Action Tier**: Trust-gated triage eliminates all 3 of 3 persistence false alarms (and 4 of 4 raw threshold alarms) from the immediate automated response tier.
-2. **Zero Attack Loss (100% Attack Event Recall)**: All 7 of 7 ground-truth cyber-physical attack events are preserved across action and review tiers (100% event preservation across queues, 0 lost, 0 Action FAs under Policy 4 and 5).
-3. **Transparent Pointwise Evaluation (No Metric Inflation)**:
+1. **Action False-Alarm Routing to Review Queue**: A calibrated two-tier gate on the residual score routes all 3 false-alarm events on the BATADAL test set (3 of 3 baseline persistence false alarms, 4 of 4 raw threshold alarms) to analyst review instead of immediate action (a 100.0% reduction in Action-tier false alarms), while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay (mean delay: 6.57h under Policy 3, 5.71h under Policy 4, 6.86h under Policy 5 vs. 4.86h under persistence). In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone.
+2. **Small-Sample Context & Validation Support**: The official test set exhibits exactly $N=3$ baseline persistence false-alarm events outside attack windows, which permits no meaningful asymptotic confidence interval. Supporting validation evidence from Dataset 04 5-fold cross-validation shows 8 Action FA events under Persistence vs. 4 under Policy 4 and 13 under Policy 3 (all preserving 5/5 attacks).
+3. **Zero Attack Loss (100% Attack Event Recall)**: All 7 of 7 ground-truth cyber-physical attack events are preserved across action and review tiers under all trust policies.
+4. **Transparent Pointwise Evaluation (No Metric Inflation)**:
    - **Pointwise F1**: **0.8368** (official frozen 95% CI: $[0.8083, 0.8659]$; 2,000-replicate i.i.d. sensitivity $[0.8079, 0.8659]$; moving-block bootstrap $[0.7586, 0.9022]$ at 12h, $[0.7015, 0.9241]$ at 48h)
    - **Pointwise Precision & Recall**: Precision **0.9677**, Recall **0.7371** (300 / 407 attack hours detected; 107 attack hours missed during accumulation phases)
    - **Point-Adjusted F1**: **0.9879** (Precision: 0.9760, Recall: 1.0000)
    - **ROC-AUC**: **0.9180** | **PR-AUC**: **0.8684**
-4. **Physical Consequence Grounding**: We demonstrate that graph betweenness centrality alone fails to predict hydraulic consequence ($\rho = +0.0932, p = 0.600$), whereas our Cyber-Physical Base Risk strongly correlates with simulated pressure deficits ($\rho = \mathbf{+0.6752}, p = 1.18 \times 10^{-5}$).
+5. **Physical Consequence Grounding**: We demonstrate that graph betweenness centrality alone fails to predict hydraulic consequence ($\rho = +0.0932, p = 0.600$), whereas our Cyber-Physical Base Risk strongly correlates with simulated pressure deficits ($\rho = \mathbf{+0.6752}, p = 1.18 \times 10^{-5}$).
 
 ---
 
@@ -86,7 +87,7 @@ The TrustRisk-WDS framework evaluates strictly on the Battle of the Attack Detec
 | **Table 2d** | **Identical-Protocol Baselines** | `experiments/run_baseline_comparison.py` | Evaluates LSTM-AE ($F_1=0.2306$), LightGBM ($F_1=0.7116$), Physical-GNN ($F_1=0.2282$), vs. Ridge ($F_1=0.8368$). |
 | **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.5%); UQS Error AUROC = 0.5994 (95% CI: [0.5460, 0.6485]); ERS discriminates attacks (0.9876) vs. false alarms (0.9211). |
 | **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Base Risk $\rho = +0.6752$ ($p = 1.18 \times 10^{-5}$); MDCI $\rho = +0.4521$ ($p = 7.27 \times 10^{-3}$); Top-10 Kendall $\tau = 0.9769$; TPPI Pyomo Knapsack ($50k budget, 1 asset; $500k budget, 9 assets). |
-| **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Policy 4 eliminates 100% of Action tier false alarms; preserves 7/7 attacks; mean operational response delay = 5.71h (6.86h under Policy 5). |
+| **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Routes 3 of 3 false-alarm events to review queue (100.0% reduction in Action FA); preserves 7/7 attacks; mean operational response delay = 6.57h (Policy 3), 5.71h (Policy 4), 6.86h (Policy 5). |
 | **Figures 1–5** | **Publication-Grade Visualizations** | `experiments/generate_publication_figures.py` | Data Card timeline (`fig1`), Calibration diagram (`fig2`), UQS/ERS dynamics (`fig3`), WNTR scatter (`fig4`), Triage trade-off (`fig5`). |
 
 ---
@@ -163,4 +164,5 @@ TrustRisk-WDS/
 
 - **Label Integrity**: Unlabelled rows (`-999` in Dataset 04) are strictly quarantined (`LABEL = -999, TRAIN_MASK = 0, EVAL_MASK = 0`) and never assumed normal.
 - **Honest Metric Reporting**: We mandate that pointwise metrics are reported side-by-side with point-adjusted metrics to prevent inflated performance claims.
-- **Operational Delay Transparency**: We transparently document the mean 5.71–6.86h operational response delay across trust policies.
+- **Operational Delay Transparency**: We transparently document the operational response delay across trust policies (mean 6.57h under Policy 3, 5.71h under Policy 4, and 6.86h under Policy 5 vs. 4.86h under baseline persistence).
+- **Negative Finding on Multi-Term Trust**: Uncertainty (UQS) and explanation-reliability (ERS) terms provided no measurable benefit over calibrated confidence (PCS) alone on the BATADAL benchmark; Policy 3 (calibrated confidence alone $\ge 0.85$) routes all 3 false-alarm events to review while keeping all 7 attacks in the action tier.

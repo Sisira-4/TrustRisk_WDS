@@ -15,10 +15,10 @@ In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical securit
 
 On the official, quarantined BATADAL test benchmark (2,089 hours, 7 cyber-physical attacks), evaluated under frozen detector hyperparameters:
 
-1. **False Alarm Elimination**: Trust-gated alert triage completely eliminates **100.0% of false-alarm events** (3 of 3 baseline persistence false alarms, 4 of 4 raw threshold alarms) from the immediate-action tier under both Policy 4 and Policy 5 (95% event-level bootstrap CI: [0.0, 0.0] events), routing non-action alerts to an asynchronous human review queue.
-2. **Zero Attack Loss Across Queues**: All **7 of 7 ground-truth cyber-physical attacks (100% event preservation)** are preserved across the triage queues under all trust policies (95% event bootstrap CI: [100.0%, 100.0%]). Under Policy 5 (trust coupled with physical risk gating), high-consequence attacks route immediately to action with a reduced mean response delay of **6.86 hours** (95% CI: [3.14, 10.57] h).
+1. **Action False-Alarm Routing to Review Queue**: A calibrated two-tier gate on the residual score routes all 3 false-alarm events on the BATADAL test set (3 of 3 baseline persistence false alarms, 4 of 4 raw threshold alarms) to analyst review instead of immediate action (a 100.0% reduction in Action-tier false alarms), while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay (6.57 h under Policy 3, 5.71 h under Policy 4, 6.86 h under Policy 5 vs. 4.86 h under baseline persistence). In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone.
+2. **Zero Attack Loss Across Queues**: All **7 of 7 ground-truth cyber-physical attacks (100.0% event preservation)** are preserved across the triage queues under all trust policies (95% event bootstrap CI: [100.0%, 100.0%]). Under Policy 3 (confidence-only gating), all 7 attacks reach immediate action (mean delay 6.57 h); under Policy 5 (trust coupled with physical risk gating), high-consequence attacks route immediately to action with a mean response delay of **6.86 hours** (95% CI: [3.14, 10.57] h).
 3. **Rigorous Pointwise Evaluation**: Under strict pointwise accounting (no point-adjustment tricks), our baseline frozen detector achieves a pointwise F1 of **0.8368** (official 1,000-replicate frozen i.i.d. 95% CI: [0.8083, 0.8659]; moving-block bootstrap sensitivity CI: [0.7586, 0.9022] at 12h, [0.7015, 0.9241] at 48h; Precision: 0.9677, Recall: 0.7371), while point-adjusted F1 reaches **0.9879**.
-4. **Transparent Trade-offs**: We explicitly document the operational delay trade-off: trust gating introduces a mean operational response delay of **5.71 hours** (Policy 4) and **6.86 hours** (Policy 5) across all attacks, requiring verification accumulation to distinguish stealthy low-magnitude manipulations from stochastic sensor noise.
+4. **Transparent Trade-offs & Negative Findings**: We explicitly document the operational delay trade-off: trust gating introduces a mean response delay of **6.57 hours** (Policy 3), **5.71 hours** (Policy 4), and **6.86 hours** (Policy 5) vs. **4.86 hours** under baseline persistence. Crucially, because baseline persistence produces only $N=3$ false-alarm events on the test set, this small sample size permits no meaningful asymptotic confidence interval; we report Dataset 04 5-fold cross-validation counts (8 Action FA under Persistence vs. 4 under Policy 4, 13 under Policy 3) as supporting evidence.
 
 ---
 
@@ -40,7 +40,7 @@ Existing literature predominantly frames cyber-physical defense as a binary clas
 
 We build upon our research group's prior foundation in time-series anomaly detection and graph walk-forward architectures (LightEdge-IDS, IC3SIS). Here, we explicitly narrow our claim: **we do not claim the underlying Ridge residual detector as our primary innovation**, but rather establish it as a transparent, reproducible benchmark baseline. The primary novel contributions of TrustRisk-WDS are:
 
-1. **Trust-Gated Alert Triage (Phase 5)**: A 3-tier selective response engine that eliminates 100% of false alarms from the automated action tier without dropping a single ground-truth attack.
+1. **Trust-Gated Alert Triage (Phase 5)**: A 3-tier selective response engine that routes 3 of 3 false-alarm events away from the automated action tier to analyst review without dropping a single ground-truth attack.
 2. **Physics-Grounded Hydraulic Consequence (Phase 4)**: An EPANET-driven consequence modeling suite that statistically grounds asset criticality in empirical pressure deficits.
 3. **Truthful & Leakage-Free Benchmark Integrity (Phases 1-3)**: Strict separation of unlabelled (-999) rows, frozen single-shot test evaluation, and dual pointwise and point-adjusted reporting.
 
@@ -117,7 +117,7 @@ The baseline detector uses a multi-sensor Ridge regression residual model ($\alp
 
 ## 4. Multi-Component Calibrated Trust Layer
 
-To triage alarms and eliminate unnecessary field dispatches, TrustRisk-WDS formulates the canonical 4-term Trust Score ($TS_t \in [0, 1]$):
+To triage alarms and route ambiguous alerts to analyst review instead of immediate automated action, TrustRisk-WDS formulates the canonical 4-term Trust Score ($TS_t \in [0, 1]$):
 
 $$\text{TS}_t = 0.40 \cdot \text{PCS}_t + 0.30 \cdot (1 - \text{UQS}_t) + 0.15 \cdot \text{ERS}_t + 0.15 \cdot \text{HRS}_t$$
 
@@ -229,7 +229,10 @@ The headline scientific contribution is evaluated in a 5-policy comparative tria
 ### Empirical Contribution Statement
 
 > **Empirical Paper Headline Claim**:  
-> *"On the official BATADAL test benchmark (2,089 hours, 7 attack events, 3 baseline false-alarm events), trust-gated alert triage (Policy 4) diverts **all 3 false-alarm events** away from the immediate-action tier (a **100.0% reduction**, 95% event-level bootstrap CI: [0.0, 0.0] events, sample size $N=3$ events) while preserving **7 of 7 attacks** across action and human-review queues (100% preservation, 95% CI: [100.0%, 100.0%]) with a mean response delay of **5.71 hours** (95% CI: [2.29, 9.57] h). Policy 5 (integrating hydraulic criticality $R_{\text{phys}}$) routes high-consequence attacks with lower delay (mean **6.86 hours**, 95% CI: [3.14, 10.57] h) while maintaining zero action-tier false alarms."*
+> *"A calibrated two-tier gate on the residual score routes all 3 false-alarm events on the BATADAL test set to analyst review instead of immediate action, while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay (6.57 h under Policy 3, 5.71 h under Policy 4, 6.86 h under Policy 5 vs. 4.86 h under baseline persistence). In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone."*
+
+> **Sample Size & Cross-Validation Context**:  
+> The baseline persistence policy produces exactly $N=3$ false-alarm events outside attack windows on the official test set (0.24 events/week over 12.4 weeks), which permits no meaningful asymptotic confidence interval. Supporting validation evidence from Dataset 04 5-fold cross-validation across held-out operational data shows 8 Action FA events under Persistence vs. 4 under Policy 4 and 13 under Policy 3 (all preserving 5/5 attacks).
 
 ---
 
@@ -276,7 +279,7 @@ The headline scientific contribution is evaluated in a 5-policy comparative tria
 - **Figure 2** (`fig2_calibration_reliability.png`): Platt scaling reliability diagram (Validation ECE 0.0198 -> 0.0052).
 - **Figure 3** (`fig3_uqs_ers_dynamics.png`): UQS vs Error AUROC (0.5994) and ERS attribution stability discrimination.
 - **Figure 4** (`fig4_hydraulic_risk_scatter.png`): Structural topology inadequacy ($\rho = 0.0932$) vs. physics consequence grounding ($\rho = +0.6752$).
-- **Figure 5** (`fig5_triage_policy_tradeoff.png`): 5-Policy false alarm elimination (100%) vs operational response delay trade-off.
+- **Figure 5** (`fig5_triage_policy_tradeoff.png`): 5-Policy Action false alarm routing to review queue (routes 3 of 3 false-alarm events to review) vs operational response delay trade-off.
 
 ---
 
@@ -300,12 +303,12 @@ TrustRisk-WDS synthesizes four essential research literatures:
 We transparently report all known threats to validity and experimental limitations:
 
 1. **Simulated Hydraulic Data & Synthetic Attacks**: While C-Town topology and EPANET simulation reflect authentic municipal hydraulics, simulated consumer demands and synthetic cyber-attacks cannot fully capture real-world operational messiness, pipe bursts, and unexpected seasonal demand swings.
-2. **Small False-Alarm Sample Size (3 Events)**: Under baseline temporal persistence, the official test set exhibits exactly 3 false-alarm events outside attack windows. While Policy 4 eliminates all 3 events from the Action tier (a 100.0% point reduction), the small sample size means the true population reduction is bounded within the 95% event bootstrap CI of [0.0, 0.0] events. We explicitly avoid claiming '100% elimination forever'.
+2. **Small False-Alarm Sample Size (3 Events) & Absence of Multi-Term Trust Benefit**: Under baseline temporal persistence, the official test set exhibits exactly 3 false-alarm events outside attack windows. While the calibrated two-tier gate routes 3 of 3 false-alarm events to analyst review (achieving a 100.0% reduction in Action-tier false alarms), the small sample size ($N=3$) permits no meaningful asymptotic confidence interval. As supporting evidence, on Dataset 04 5-fold cross-validation across 12.4 weeks of held-out operational data, Action FA events were 8 under Persistence vs. 4 under Policy 4 and 13 under Policy 3. Crucially, on this benchmark, uncertainty (UQS) and explanation-reliability (ERS) terms provided no measurable benefit over calibrated confidence (PCS) alone, as PCS alone (Policy 3) routes all 3 false-alarm events to review while keeping all 7 attacks in action.
 3. **Sparsity of Monitored Sensor Topology (19 of 396 Nodes)**: In C-Town, only 19 physical locations out of 396 network elements are equipped with SCADA sensors. Root cause localization and cascading reach estimates rely on graph shortest-path propagation rather than exhaustive network instrumentation.
 4. **Assumed Hardening Costs & Component Parameters**: Unit hardening costs ($120k for pumps, $80k for valves, $100k for tanks, $40k for junctions) and physical vulnerability factors represent engineering assumptions documented in `config/trustrisk.yaml`. While rank sensitivity analysis confirms invariance (Kendall $\tau = 0.9769$), municipal deployments must tailor cost parameters to utility procurement contracts.
 5. **Test Set Seen During Downstream Development**: The primary Ridge detector was strictly frozen in `frozen_config.json` before first test exposure. However, downstream trust and triage layers were evaluated on the test set retrospectively. While all hyperparameter selections were restricted to Dataset 04 validation folds, readers must treat downstream policy evaluations as exploratory.
 6. **Circular Moving-Block Bootstrap Assumption**: Circular block bootstrap assumes periodic boundary wrapping ($T-1 \to 0$) to eliminate sample loss. It is presented strictly as a sensitivity check on temporal autocorrelation, not a proof of stationarity.
-7. **The Operational Latency Trade-Off**: Trust validation introduces an average response delay of **5.71 hours** (Policy 4) and **6.86 hours** (Policy 5). Municipal utilities must determine whether this latency is acceptable in exchange for eliminating false actuator shutdowns.
+7. **The Operational Latency Trade-Off**: Trust validation introduces an average response delay of **6.57 hours** (Policy 3), **5.71 hours** (Policy 4), and **6.86 hours** (Policy 5) vs. **4.86 hours** under persistence. Municipal utilities must determine whether this additional delay (1.7-2.3 h) is acceptable in exchange for routing false alarms to human review rather than executing automated actuator shutdowns.
 
 ---
 

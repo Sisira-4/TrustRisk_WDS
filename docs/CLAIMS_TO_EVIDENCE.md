@@ -42,7 +42,7 @@ In accordance with Rule 1 of the Project Specification (*No Fabrication*), zero 
 | **CLM-30** | Policy 1 (Raw Threshold) Action False Alarms | `4` | `results/core_triage_experiment.json` | `headline_policies[0]['unnecessary_responses']` | `test_clm_30_policy1_action_fa` |
 | **CLM-31** | Policy 2 (Persistence) Action False Alarms | `3` | `results/core_triage_experiment.json` | `headline_policies[1]['unnecessary_responses']` | `test_clm_31_policy2_action_fa` |
 | **CLM-32** | Policy 4 (Trust Gate) Action False Alarms | `0` | `results/core_triage_experiment.json` | `headline_policies[3]['unnecessary_responses']` | `test_clm_32_policy4_action_fa` |
-| **CLM-33** | Policy 4 False Alarm Elimination Rate | `100.0%` | `results/core_triage_experiment.json` | `headline_policies[3]['reduction_vs_persist']` | `test_clm_33_policy4_fa_reduction` |
+| **CLM-33** | Policy 4 Action False Alarm Reduction (Routes 3 of 3 to Review) | `100.0%` | `results/core_triage_experiment.json` | `headline_policies[3]['reduction_vs_persist']` | `test_clm_33_policy4_fa_reduction` |
 | **CLM-34** | Policy 4 Attacks Preserved (Action + Review) | `7/7` | `results/core_triage_experiment.json` | `headline_policies[3]['attacks_preserved']` | `test_clm_34_policy4_attacks_preserved` |
 | **CLM-35** | Policy 4 Mean Operational Response Delay | `5.71` | `results/core_triage_experiment.json` | `headline_policies[3]['mean_delay_hours']` | `test_clm_35_policy4_mean_delay` |
 | **CLM-36** | Policy 5 (Trust-Risk Gate) Action False Alarms | `0` | `results/core_triage_experiment.json` | `headline_policies[4]['unnecessary_responses']` | `test_clm_36_policy5_action_fa` |

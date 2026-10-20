@@ -25,6 +25,6 @@ This document records research items, assumptions, or future explorations that c
 - **Current Position**: Honestly documented under Future Work in [`docs/MANUSCRIPT_REVISION.md`](file:///c:/Users/shino/Desktop/Project/docs/MANUSCRIPT_REVISION.md) to maintain strictly frozen test quarantine on the primary benchmark.
 
 ## 4. Operational Latency Acceptance by Municipal Utilities
-- **Observation**: Trust validation introduces a mean delay of 11.57 hours (Policy 4) and 8.00 hours (Policy 5) across all attacks.
-- **Question**: Is an 8-hour latency acceptable to water operators for low-magnitude stealthy attacks, in exchange for eliminating 100% of false automated pump shutoffs?
+- **Observation**: Trust validation introduces a mean response delay of 6.57 hours (Policy 3), 5.71 hours (Policy 4), and 6.86 hours (Policy 5) across all attacks vs. 4.86 hours under baseline persistence.
+- **Question**: Is an additional 1.7-2.3 hour latency acceptable to water operators for low-magnitude stealthy attacks, in exchange for routing 3 of 3 false-alarm events to analyst review rather than executing automated pump shutoffs?
 - **Analysis**: The manuscript explicitly discusses this trade-off: fast-acting burst attacks (e.g., Attack 7) are detected quickly (delay = 1–2 hours), whereas subtle tank drainage manipulations accumulate over multi-day periods and require observation accumulation.
