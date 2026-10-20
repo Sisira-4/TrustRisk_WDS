@@ -256,7 +256,7 @@ lines.append("\n### Table 2d: Baseline Comparison under Identical Quarantined Pr
 lines.append("| Architecture / Model | Pointwise $F_1$ | Pointwise Precision | Pointwise Recall | Point-Adjusted $F_1$ | Event Detection | Action FA Events | Mean Delay |")
 lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
 MODEL_DISPLAY_NAMES = {
-    "Physical_GNN": "Physical GNN (Batt. / Graph Conv)",
+    "Physical_GNN": "Physical GNN (legacy protocol, not comparable)",
     "LSTM_Autoencoder": "LSTM Autoencoder (3 Seeds Mean ± Std)",
     "LightGBM_Tabular_Residual": "LightGBM Gradient Boosted Trees",
     "Raw_Threshold": "Raw Detector Threshold (Instantaneous)",
@@ -276,6 +276,8 @@ for k, m in base_comp.items():
     fa_str = str(m.get("action_fa_events", m.get("false_alarm_events", 0)))
     delay_str = f"{m['mean_delay_h']:.2f} h" if m.get("mean_delay_h") is not None else "-"
     lines.append(f"| **{name}** | {f1_str} | {p_str} | {r_str} | {m['pa_f1']:.4f} | {m['events_detected']} | {fa_str} | {delay_str} |")
+
+lines.append("\n*Note on Baseline Protocols*: All residual-based models (Ridge, LightGBM, LSTM Autoencoder) are trained on the quarantined Dataset 04 margin-free normal pool (>48h from attacks), thresholded at $q=99.0$, and evaluate under an identical 3-of-6 rolling persistence rule. Physical-GNN is evaluated from its trained checkpoint at legacy validation threshold 0.97 without temporal persistence and is noted as not directly comparable.\n")
 
 lines.append("\n*Publication Figures Support*:\n")
 lines.append("- **Figure 1** (`fig1_data_card_masking.png`): Dataset split timeline, label masking, and +-48h margin quarantine.")

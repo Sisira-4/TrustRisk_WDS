@@ -53,6 +53,8 @@ RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
 RESULTS_DIR = ROOT / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+BASELINES_DIR = RESULTS_DIR / "baselines"
+BASELINES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class LSTMAutoencoder(nn.Module):
@@ -166,75 +168,65 @@ def evaluate_predictions(preds_binary, scores_continuous, y_true, attack_events)
     }
 
 
-def evaluate_physical_gnn(attack_events, y_te):
+def evaluate_physical_gnn(attack_events, y_te, datetimes):
     """Evaluates Physical-GNN baseline from models/gnn_gru/physical_gnn_gru_model_C.pth."""
     print("[*] Evaluating Physical-GNN Baseline (Graph Neural Network + Temporal GRU)...")
     ckpt_path = ROOT / "models" / "gnn_gru" / "physical_gnn_gru_model_C.pth"
     test_proc_path = PROCESSED_DIR / "test_processed.csv"
     
-    gnn_results = None
-    if ckpt_path.exists() and test_proc_path.exists():
-        try:
-            from models.gnn_gru.train_gnn_gru_physical import PhysicalGNN_GRU, get_probs
-            from models.gnn_gru.physical_dataset import WDSPhysicalGraphDataset
-            
-            test_df = pd.read_csv(test_proc_path)
-            test_ds = WDSPhysicalGraphDataset(test_df, str(ROOT), window_size=12, use_physical_attributes=False)
-            test_loader = torch.utils.data.DataLoader(test_ds, batch_size=128, shuffle=False)
-            
-            device = torch.device("cpu")
-            model = PhysicalGNN_GRU(node_dim=test_ds.F_node, edge_dim=test_ds.F_edge, gnn_hidden=64, gru_hidden=128)
-            model.load_state_dict(torch.load(ckpt_path, map_location="cpu", weights_only=False))
-            model.eval()
-            
-            t_lab, t_pr = get_probs(model, test_loader, device, test_ds.edge_index)
-            # Optimal validation threshold identified during training (0.97)
-            raw_gnn = (t_pr >= 0.97).astype(int)
-            
-            # Map predictions to 2089 test timeline (accounting for window size offset)
-            offset = 2089 - len(raw_gnn)
-            padded_raw = np.pad(raw_gnn, (offset, 0), mode="edge")
-            padded_pr = np.pad(t_pr, (offset, 0), mode="edge")
-            
-            gnn_results = evaluate_predictions(padded_raw, padded_pr, y_te, attack_events)
-        except Exception as e:
-            print(f"Warning: Physical-GNN live inference exception ({e}), applying verified checkpoint evaluation metrics.")
-            gnn_results = None
+    if not (ckpt_path.exists() and test_proc_path.exists()):
+        raise FileNotFoundError(
+            f"Physical-GNN checkpoint {ckpt_path} or test dataset {test_proc_path} missing."
+        )
 
-    if gnn_results is None:
-        # Verified exact numbers from physical_gnn_evaluation_without_attrs.json & test run
-        gnn_results = {
-            "pointwise_f1": 0.2282,
-            "pointwise_precision": 0.7333,
-            "pointwise_recall": 0.1351,
-            "tp": 55,
-            "fp": 20,
-            "fn": 352,
-            "tn": 1651,
-            "pa_f1": 0.8365,
-            "pa_precision": 0.9388,
-            "pa_recall": 0.7543,
-            "pa_tp": 307,
-            "pa_fp": 20,
-            "pa_fn": 100,
-            "pa_tn": 1651,
-            "roc_auc": 0.6945,
-            "pr_auc": 0.4367,
-            "events_detected": "5 / 7",
-            "detected_events_count": 5,
-            "total_events_count": 7,
-            "false_alarm_events": 5,
-            "mean_delay_h": 23.80,
-            "per_attack_outcomes": [
-                {"event_index": 1, "length_hours": 70, "detected": False, "delay_hours": None},
-                {"event_index": 2, "length_hours": 65, "detected": True, "delay_hours": 23},
-                {"event_index": 3, "length_hours": 31, "detected": True, "delay_hours": 12},
-                {"event_index": 4, "length_hours": 31, "detected": True, "delay_hours": 5},
-                {"event_index": 5, "length_hours": 100, "detected": True, "delay_hours": 50},
-                {"event_index": 6, "length_hours": 80, "detected": True, "delay_hours": 29},
-                {"event_index": 7, "length_hours": 30, "detected": False, "delay_hours": None},
-            ]
-        }
+    from models.gnn_gru.train_gnn_gru_physical import PhysicalGNN_GRU, get_probs
+    from models.gnn_gru.physical_dataset import WDSPhysicalGraphDataset
+    
+    test_df = pd.read_csv(test_proc_path)
+    test_ds = WDSPhysicalGraphDataset(test_df, str(ROOT), window_size=12, use_physical_attributes=False)
+    test_loader = torch.utils.data.DataLoader(test_ds, batch_size=128, shuffle=False)
+    
+    device = torch.device("cpu")
+    model = PhysicalGNN_GRU(node_dim=test_ds.F_node, edge_dim=test_ds.F_edge, gnn_hidden=64, gru_hidden=128)
+    model.load_state_dict(torch.load(ckpt_path, map_location="cpu", weights_only=False))
+    model.eval()
+    
+    t_lab, t_pr = get_probs(model, test_loader, device, test_ds.edge_index)
+    
+    # Load threshold from pre-committed config or default
+    b_cfg_path = ROOT / "config" / "baselines_config.json"
+    thr_gnn = 0.97
+    if b_cfg_path.exists():
+        with open(b_cfg_path, "r", encoding="utf-8") as f:
+            b_cfg = json.load(f)
+        thr_gnn = float(b_cfg.get("models", {}).get("Physical_GNN", {}).get("threshold", 0.97))
+
+    raw_gnn = (t_pr >= thr_gnn).astype(int)
+    
+    # Map predictions to test timeline (accounting for window size offset)
+    offset = len(y_te) - len(raw_gnn)
+    padded_raw = np.pad(raw_gnn, (offset, 0), mode="edge")
+    padded_pr = np.pad(t_pr, (offset, 0), mode="edge")
+    
+    gnn_results = evaluate_predictions(padded_raw, padded_pr, y_te, attack_events)
+    gnn_results["protocol"] = "legacy_protocol_not_comparable"
+    gnn_results["note"] = (
+        "Evaluated at legacy validation threshold without temporal persistence. "
+        "Not directly comparable to 3-of-6 persistence protocol."
+    )
+
+    # Save per-hour scores for audit
+    df_gnn_scores = pd.DataFrame({
+        "DATETIME": datetimes,
+        "score": padded_pr,
+        "threshold": thr_gnn,
+        "alarm_raw": padded_raw,
+        "y_true": y_te
+    })
+    gnn_scores_file = BASELINES_DIR / "gnn_scores_test.csv"
+    df_gnn_scores.to_csv(gnn_scores_file, index=False)
+    print(f">> Saved Physical-GNN per-hour test scores to {gnn_scores_file}")
+
     return gnn_results
 
 
@@ -251,6 +243,7 @@ def run_baselines():
 
     sensor_cols = [c for c in d4.columns if c not in ("DATETIME", "ATT_FLAG", "ATTACK_FLAG")]
     y_te = (te["ATT_FLAG"].values == 1).astype(int)
+    datetimes = te["DATETIME"].values if "DATETIME" in te.columns else np.arange(len(te))
 
     # Margin-free normal pool in Dataset 04 (> 48h from attacks)
     lab4 = d4["ATT_FLAG"].values
@@ -271,7 +264,7 @@ def run_baselines():
     # -------------------------------------------------------------
     # Baseline 1: Physical-GNN Baseline (Graph Neural Network + GRU)
     # -------------------------------------------------------------
-    gnn_results = evaluate_physical_gnn(attack_events, y_te)
+    gnn_results = evaluate_physical_gnn(attack_events, y_te, datetimes)
 
     # -------------------------------------------------------------
     # Baseline 2: LSTM Autoencoder (Evaluated over 3 seeds)
@@ -297,7 +290,7 @@ def run_baselines():
         torch.manual_seed(seed)
         np.random.seed(seed)
         model_ae = LSTMAutoencoder(input_dim=len(sensor_cols), hidden_dim=32, num_layers=1)
-        optimizer = torch.optim.Adam(model_ae.parameters(), lr=0.005)
+        optimizer = torch.optim.Adam(model_ae.parameters(), lr=5e-3)
         criterion = nn.MSELoss()
 
         loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(seq_tr), batch_size=128, shuffle=True)
@@ -319,13 +312,27 @@ def run_baselines():
             mse_te = torch.mean((recon_te - seq_te) ** 2, dim=[1, 2]).numpy()
 
         full_mse_te = np.pad(mse_te, (window_size - 1, 0), mode="edge")
-        thr_ae = np.percentile(mse_tr, 99.0)
+        thr_ae = float(np.percentile(mse_tr, 99.0))
         raw_ae = (full_mse_te > thr_ae).astype(int)
         persist_ae = (pd.Series(raw_ae).rolling(6, min_periods=1).sum().values >= 3).astype(int)
         
         seed_eval = evaluate_predictions(persist_ae, full_mse_te, y_te, attack_events)
         seed_eval["seed"] = seed
         seed_records.append(seed_eval)
+
+        # Save primary seed 42 per-hour scores for audit
+        if seed == 42:
+            df_ae_scores = pd.DataFrame({
+                "DATETIME": datetimes,
+                "score": full_mse_te,
+                "threshold": thr_ae,
+                "alarm_raw": raw_ae,
+                "alarm_persist": persist_ae,
+                "y_true": y_te
+            })
+            ae_scores_file = BASELINES_DIR / "lstm_ae_scores_test.csv"
+            df_ae_scores.to_csv(ae_scores_file, index=False)
+            print(f">> Saved LSTM-AE per-hour test scores to {ae_scores_file}")
 
     # Use Seed 42 as primary representative, record seed standard deviations
     lstm_results = dict(seed_records[0])
@@ -365,64 +372,59 @@ def run_baselines():
     scores_val_lgbm = np.sort(z_val_lgbm, axis=1)[:, -3:].mean(axis=1)
     scores_te_lgbm = np.sort(z_te_lgbm, axis=1)[:, -3:].mean(axis=1)
 
-    thr_lgbm = np.percentile(scores_val_lgbm, 99.0)
+    thr_lgbm = float(np.percentile(scores_val_lgbm, 99.0))
     raw_lgbm = (scores_te_lgbm > thr_lgbm).astype(int)
     persist_lgbm = (pd.Series(raw_lgbm).rolling(6, min_periods=1).sum().values >= 3).astype(int)
     lgbm_results = evaluate_predictions(persist_lgbm, scores_te_lgbm, y_te, attack_events)
+
+    # Save LightGBM per-hour scores for audit
+    df_lgbm_scores = pd.DataFrame({
+        "DATETIME": datetimes,
+        "score": scores_te_lgbm,
+        "threshold": thr_lgbm,
+        "alarm_raw": raw_lgbm,
+        "alarm_persist": persist_lgbm,
+        "y_true": y_te
+    })
+    lgbm_scores_file = BASELINES_DIR / "lgbm_scores_test.csv"
+    df_lgbm_scores.to_csv(lgbm_scores_file, index=False)
+    print(f">> Saved LightGBM per-hour test scores to {lgbm_scores_file}")
 
     # -------------------------------------------------------------
     # Baseline 4: Raw Detector Threshold (Ridge, No Persistence)
     # -------------------------------------------------------------
     scores_test_file = ROOT / "results" / "v3" / "scores_test.csv"
-    if scores_test_file.exists():
-        sc_te_df = pd.read_csv(scores_test_file)
-        raw_pred_ridge = sc_te_df["alarm_raw"].values
-        score_ridge = sc_te_df["score"].values
-        raw_threshold_results = evaluate_predictions(raw_pred_ridge, score_ridge, y_te, attack_events)
-    else:
-        raw_threshold_results = {
-            "pointwise_f1": 0.8115, "pointwise_precision": 0.9792, "pointwise_recall": 0.6929,
-            "tp": 282, "fp": 6, "fn": 125, "tn": 1676,
-            "pa_f1": 0.9927, "pa_precision": 0.9855, "pa_recall": 1.0000,
-            "pa_tp": 407, "pa_fp": 6, "pa_fn": 0, "pa_tn": 1676,
-            "roc_auc": 0.9180, "pr_auc": 0.8684,
-            "events_detected": "7 / 7", "detected_events_count": 7, "total_events_count": 7,
-            "false_alarm_events": 4, "mean_delay_h": 4.00,
-            "per_attack_outcomes": []
-        }
+    if not scores_test_file.exists():
+        raise FileNotFoundError(
+            f"Missing required residual score file: {scores_test_file}. Run experiments/v3_residual/run_test_once.py first."
+        )
+    sc_te_df = pd.read_csv(scores_test_file)
+    raw_pred_ridge = sc_te_df["alarm_raw"].values
+    score_ridge = sc_te_df["score"].values
+    raw_threshold_results = evaluate_predictions(raw_pred_ridge, score_ridge, y_te, attack_events)
 
     # -------------------------------------------------------------
     # Baseline 5: Multi-Sensor Ridge Residual (Ours, Policy 2 Persistence)
     # -------------------------------------------------------------
-    if scores_test_file.exists():
-        persist_pred_ridge = sc_te_df["alarm_persist"].values
-        ridge_results = evaluate_predictions(persist_pred_ridge, score_ridge, y_te, attack_events)
-    else:
-        ridge_results = {
-            "pointwise_f1": 0.8368, "pointwise_precision": 0.9677, "pointwise_recall": 0.7371,
-            "tp": 300, "fp": 10, "fn": 107, "tn": 1672,
-            "pa_f1": 0.9879, "pa_precision": 0.9760, "pa_recall": 1.0000,
-            "pa_tp": 407, "pa_fp": 10, "pa_fn": 0, "pa_tn": 1672,
-            "roc_auc": 0.9180, "pr_auc": 0.8684,
-            "events_detected": "7 / 7", "detected_events_count": 7, "total_events_count": 7,
-            "false_alarm_events": 3, "mean_delay_h": 4.86,
-            "per_attack_outcomes": []
-        }
+    persist_pred_ridge = sc_te_df["alarm_persist"].values
+    ridge_results = evaluate_predictions(persist_pred_ridge, score_ridge, y_te, attack_events)
 
     # -------------------------------------------------------------
     # TrustRisk-WDS (Policy 4 and Policy 5)
     # -------------------------------------------------------------
     triage_path = RESULTS_DIR / "core_triage_experiment.json"
-    p4_delay = 5.71
-    p5_delay = 6.86
-    if triage_path.exists():
-        try:
-            with open(triage_path, "r", encoding="utf-8") as f:
-                t_data = json.load(f)
-            p4_delay = float(t_data["headline_policies"][3]["mean_delay_hours"])
-            p5_delay = float(t_data["headline_policies"][4]["mean_delay_hours"])
-        except Exception:
-            pass
+    if not triage_path.exists():
+        raise FileNotFoundError(
+            f"Missing required triage result file: {triage_path}. Run experiments/run_core_triage_experiment.py first."
+        )
+    with open(triage_path, "r", encoding="utf-8") as f:
+        t_data = json.load(f)
+    p4_info = t_data["headline_policies"][3]
+    p5_info = t_data["headline_policies"][4]
+    p4_delay = float(p4_info["mean_delay_hours"])
+    p5_delay = float(p5_info["mean_delay_hours"])
+    p4_action_fa = int(p4_info["unnecessary_responses"])
+    p5_action_fa = int(p5_info["unnecessary_responses"])
 
     policy4_results = {
         "pointwise_f1": ridge_results["pointwise_f1"],
@@ -444,8 +446,8 @@ def run_baselines():
         "events_detected": "7 / 7",
         "detected_events_count": 7,
         "total_events_count": 7,
-        "false_alarm_events": 0,
-        "action_fa_events": 0,
+        "false_alarm_events": p4_action_fa,
+        "action_fa_events": p4_action_fa,
         "mean_delay_h": p4_delay,
         "per_attack_outcomes": ridge_results["per_attack_outcomes"]
     }
@@ -470,8 +472,8 @@ def run_baselines():
         "events_detected": "7 / 7",
         "detected_events_count": 7,
         "total_events_count": 7,
-        "false_alarm_events": 0,
-        "action_fa_events": 0,
+        "false_alarm_events": p5_action_fa,
+        "action_fa_events": p5_action_fa,
         "mean_delay_h": p5_delay,
         "per_attack_outcomes": ridge_results["per_attack_outcomes"]
     }
@@ -518,13 +520,13 @@ def run_baselines():
 
     # Format Table 2d
     rows = [
-        ["Physical-GNN Baseline (Graph Neural Net)", gnn_results["pointwise_f1"], gnn_results["pointwise_precision"], gnn_results["pointwise_recall"], gnn_results["pa_f1"], gnn_results["events_detected"], gnn_results["false_alarm_events"], f"{gnn_results['mean_delay_h']} h"],
+        ["Physical-GNN Baseline (legacy protocol, not comparable)", gnn_results["pointwise_f1"], gnn_results["pointwise_precision"], gnn_results["pointwise_recall"], gnn_results["pa_f1"], gnn_results["events_detected"], gnn_results["false_alarm_events"], f"{gnn_results['mean_delay_h']} h"],
         ["LSTM Autoencoder (12h Reconstruction)", lstm_results["pointwise_f1"], lstm_results["pointwise_precision"], lstm_results["pointwise_recall"], lstm_results["pa_f1"], lstm_results["events_detected"], lstm_results["false_alarm_events"], f"{lstm_results['mean_delay_h']} h"],
         ["LightGBM Tabular Residual (Lags=1, Top-3)", lgbm_results["pointwise_f1"], lgbm_results["pointwise_precision"], lgbm_results["pointwise_recall"], lgbm_results["pa_f1"], lgbm_results["events_detected"], lgbm_results["false_alarm_events"], f"{lgbm_results['mean_delay_h']} h"],
         ["Raw Detector Threshold (Ridge, No Persistence)", raw_threshold_results["pointwise_f1"], raw_threshold_results["pointwise_precision"], raw_threshold_results["pointwise_recall"], raw_threshold_results["pa_f1"], raw_threshold_results["events_detected"], raw_threshold_results["false_alarm_events"], f"{raw_threshold_results['mean_delay_h']} h"],
         ["Ridge Residual (Ours, Policy 2 Persistence)", ridge_results["pointwise_f1"], ridge_results["pointwise_precision"], ridge_results["pointwise_recall"], ridge_results["pa_f1"], ridge_results["events_detected"], ridge_results["false_alarm_events"], f"{ridge_results['mean_delay_h']} h"],
-        ["TrustRisk-WDS (Policy 4: Full Trust Gate)", policy4_results["pointwise_f1"], policy4_results["pointwise_precision"], policy4_results["pointwise_recall"], policy4_results["pa_f1"], policy4_results["events_detected"], "0 (-100%)", f"{policy4_results['mean_delay_h']} h"],
-        ["TrustRisk-WDS (Policy 5: Trust + Risk Gate)", policy5_results["pointwise_f1"], policy5_results["pointwise_precision"], policy5_results["pointwise_recall"], policy5_results["pa_f1"], policy5_results["events_detected"], "0 (-100%)", f"{policy5_results['mean_delay_h']} h"],
+        ["TrustRisk-WDS (Policy 4: Full Trust Gate)", policy4_results["pointwise_f1"], policy4_results["pointwise_precision"], policy4_results["pointwise_recall"], policy4_results["pa_f1"], policy4_results["events_detected"], f"{policy4_results['action_fa_events']} (-100%)", f"{policy4_results['mean_delay_h']} h"],
+        ["TrustRisk-WDS (Policy 5: Trust + Risk Gate)", policy5_results["pointwise_f1"], policy5_results["pointwise_precision"], policy5_results["pointwise_recall"], policy5_results["pa_f1"], policy5_results["events_detected"], f"{policy5_results['action_fa_events']} (-100%)", f"{policy5_results['mean_delay_h']} h"],
     ]
 
     df_table = pd.DataFrame(rows, columns=["Architecture / Model", "Pointwise F1", "Precision", "Recall", "PA F1", "Events Det", "Action FA Events", "Mean Delay"])

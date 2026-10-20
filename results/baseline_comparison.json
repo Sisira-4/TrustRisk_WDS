@@ -64,7 +64,9 @@
         "detected": false,
         "delay_hours": null
       }
-    ]
+    ],
+    "protocol": "legacy_protocol_not_comparable",
+    "note": "Evaluated at legacy validation threshold without temporal persistence. Not directly comparable to 3-of-6 persistence protocol."
   },
   "LSTM_Autoencoder": {
     "pointwise_f1": 0.2306,
