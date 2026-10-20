@@ -1,8 +1,8 @@
 # TrustRisk-WDS: Claims-to-Evidence Traceability Matrix
 
-This document provides a strict, verifiable mapping from every quantitative claim made in [`README.md`](file:///c:/Users/shino/Desktop/Project/README.md) and [`docs/MANUSCRIPT_REVISION.md`](file:///c:/Users/shino/Desktop/Project/docs/MANUSCRIPT_REVISION.md) to its code-generated JSON/CSV artifact and enforcing test in the test suite.
+This document provides a strict, verifiable mapping from every quantitative claim made in [`README.md`](../README.md) and [`docs/MANUSCRIPT_REVISION.md`](MANUSCRIPT_REVISION.md) to its code-generated JSON/CSV artifact and enforcing test in the test suite.
 
-In accordance with Rule 1 of the Project Specification (*No Fabrication*), zero numbers are typed by hand. Every claim is verified by [`tests/test_claims_evidence.py`](file:///c:/Users/shino/Desktop/Project/tests/test_claims_evidence.py), and a test failure occurs if any claim disagrees with its pipeline source file.
+In accordance with Rule 1 of the Project Specification (*No Fabrication*), zero numbers are typed by hand. Every claim is verified by [`tests/test_claims_evidence.py`](../tests/test_claims_evidence.py), and a test failure occurs if any claim disagrees with its pipeline source file.
 
 ---
 
@@ -36,8 +36,8 @@ In accordance with Rule 1 of the Project Specification (*No Fabrication*), zero 
 | **CLM-24** | Test UQS vs. Error AUROC | `0.5994` | `results/trust_calibration.json` | `test.uqs_auroc` | `test_clm_24_test_uqs_auroc` |
 | **CLM-25** | Platt Calibrator Slope ($A$) | `0.3750` | `results/trust_calibration.json` | `platt_scale` | `test_clm_25_platt_calibrator_params` |
 | **CLM-26** | Platt Calibrator Bias ($B$) | `-4.6532` | `results/trust_calibration.json` | `platt_bias` | `test_clm_26_platt_bias` |
-| **CLM-27** | Top-10 TDCRI Kendall Rank Correlation | `0.9769` | `results/v3/trust_pipeline_clean.csv` / simulation | Invariance under $\pm 20\%$ weight perturbation | `test_clm_27_kendall_tau_stability` |
-| **CLM-28** | WNTR Base Risk vs. ISS Spearman $\rho$ | `+0.6752` | `results/risk_assets_report.csv` | `spearmanr(Base_Risk, ISS)` | `test_clm_28_base_risk_spearman_rho` |
+| **CLM-27** | Top-10 TDCRI Kendall Rank Correlation | `0.9859` | `results/v3/trust_pipeline_clean.csv` / simulation | Invariance under 1,000 weight perturbations ($\pm 20\%$) | `test_clm_27_kendall_tau_stability` |
+| **CLM-28** | WNTR Base Risk vs. Spatial Consequences Spearman $\rho$ | `+0.5805` | `results/risk_assets_report.csv` | `spearmanr(Base_Risk, Affected_Nodes)` | `test_clm_28_base_risk_spearman_rho` |
 | **CLM-29** | Structural Centrality vs. ISS Spearman $\rho$ | `+0.0932` | `results/risk_assets_report.csv` | `spearmanr(Structural_Criticality, ISS)` | `test_clm_29_structural_spearman_rho` |
 | **CLM-30** | Policy 1 (Raw Threshold) Action False Alarms | `4` | `results/core_triage_experiment.json` | `headline_policies[0]['unnecessary_responses']` | `test_clm_30_policy1_action_fa` |
 | **CLM-31** | Policy 2 (Persistence) Action False Alarms | `3` | `results/core_triage_experiment.json` | `headline_policies[1]['unnecessary_responses']` | `test_clm_31_policy2_action_fa` |

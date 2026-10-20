@@ -22,7 +22,7 @@ This document records research items, assumptions, or future explorations that c
 ## 3. Second Dataset Evaluation (Future Work)
 - **Status**: Quarantined single-dataset evaluation on BATADAL (C-Town) is fully complete and verified.
 - **Question**: Should the framework be cross-evaluated on the WADI (Water Distribution) testbed or synthetic WNTR attack scenarios as a post-submission extension?
-- **Current Position**: Honestly documented under Future Work in [`docs/MANUSCRIPT_REVISION.md`](file:///c:/Users/shino/Desktop/Project/docs/MANUSCRIPT_REVISION.md) to maintain strictly frozen test quarantine on the primary benchmark.
+- **Current Position**: Honestly documented under Future Work in [`docs/MANUSCRIPT_REVISION.md`](MANUSCRIPT_REVISION.md) to maintain strictly frozen test quarantine on the primary benchmark.
 
 ## 4. Operational Latency Acceptance by Municipal Utilities
 - **Observation**: Trust validation introduces a mean response delay of 6.57 hours (Policy 3), 5.71 hours (Policy 4), and 6.86 hours (Policy 5) across all attacks vs. 4.86 hours under baseline persistence.

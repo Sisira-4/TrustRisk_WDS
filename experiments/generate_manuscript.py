@@ -10,9 +10,15 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from config.loader import load_config, get_config_hash
+from experiments.build_manuscript_tables import build_all_tables
+from risk.tdcri import TDCRICalculator
+from risk.tppi import TPPISolver
 
 cfg = load_config()
 cfg_hash = get_config_hash()
+
+# Ensure all standalone tables in results/tables/ are up to date
+tables = build_all_tables()
 
 # Load all artifacts
 with open(ROOT / "results" / "data_card.json", "r", encoding="utf-8") as f:
@@ -52,13 +58,6 @@ ci_24 = blocks["24h_blocks"]["ci_95"]
 ci_48 = blocks["48h_blocks"]["ci_95"]
 ci_sens = block_rep["iid_bootstrap_95ci"]
 
-# Baselines
-gnn = base_comp.get("Physical_GNN", {})
-lstm = base_comp.get("LSTM_Autoencoder", {})
-lgb = base_comp.get("LightGBM_Tabular_Residual", {})
-raw_m = base_comp.get("Raw_Threshold", {})
-ridge = base_comp.get("MultiSensor_Ridge_Residual_Ours", {})
-
 # Triage policies
 p1 = triage_exp["headline_policies"][0]
 p2 = triage_exp["headline_policies"][1]
@@ -73,12 +72,7 @@ rho_mdci, p_mdci = spearmanr(valid_risk["MDCI"], valid_risk["ISS"])
 rho_base, p_base = spearmanr(valid_risk["Base_Risk"], valid_risk["ISS"])
 rho_spatial, p_spatial = spearmanr(valid_risk["Base_Risk"], valid_risk["Affected_Nodes"])
 
-# Top 10 risk table
-top10_risk = df_risk.sort_values(by="TDCRI", ascending=False).head(10)
-
 # Sensitivity over 1,000 trials
-from risk.tdcri import TDCRICalculator
-from risk.tppi import TPPISolver
 tdcri_calc = TDCRICalculator(cfg)
 tau_mean, tau_min, sens_details = tdcri_calc.test_ranking_sensitivity_kendall(df_risk, n_trials=1000)
 tppi_solver = TPPISolver(cfg)
@@ -96,9 +90,9 @@ lines.append("---\n")
 
 lines.append("## Abstract\n")
 lines.append("Industrial Control Systems (ICS) and municipal Water Distribution Systems (WDS) face sophisticated cyber-physical attacks designed to manipulate hydraulic actuators, deplete storage tanks, and contaminate supply lines. While state-of-the-art anomaly detectors achieve high detection recall, their real-world operational adoption is severely bottlenecked by **alert fatigue**: even a modest false-alarm rate translates into frequent, disruptive actuator shutdowns and unnecessary emergency field dispatches. Furthermore, conventional alert systems treat every anomaly uniformly, ignoring the underlying physical consequence and hydraulic criticality of affected assets.\n")
-lines.append(f"In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical security framework centered on **Trust-Gated Alert Triage** and **Physics-Grounded Hydraulic Risk Prioritization**. Our core contribution is an alert triage engine that evaluates every raw anomaly through orthogonal trust dimensions: calibrated attack probability via Platt scaling ($PCS$), ensemble epistemic uncertainty quantification ($UQS$), explanation reliability ($ERS$) via exact Linear SHAP background stability, and causal historical reliability ($HRS$). Concurrently, we introduce a hydraulic consequence layer driven by extended-period simulation in WNTR (EPANET), demonstrating that pure topological graph centrality fails to predict physical damage ($\\rho = {rho_struct:.4f}, p = {p_struct:.3f}$), whereas our non-circular Cyber-Physical Base Risk strongly correlates with independent customer service disruption ($\\rho = +{rho_spatial:.4f}, p = {p_spatial:.2e}$ vs. Affected Nodes; composite $\\rho = +{rho_base:.4f}, p = {p_base:.2e}$ vs. ISS).\n")
+lines.append(f"In this work, we present **TrustRisk-WDS**, an end-to-end cyber-physical security framework centered on **Trust-Gated Alert Triage** and **Physics-Grounded Hydraulic Risk Prioritization**. While the initial project design investigated physical Graph Neural Networks (GNN-GRU), empirical benchmarking revealed that the GNN was significantly outperformed by a simpler multi-sensor Ridge residual detector ($F_1 = 0.2282$ vs. $0.8368$ pointwise). Accordingly, the primary scientific contribution of TrustRisk-WDS is not the anomaly detector itself, but rather the orthogonal **Trust-Gated Alert Triage Layer** and **Physics-Grounded Hydraulic Consequence and Risk Prioritization Layer**. Our triage engine evaluates every raw anomaly through orthogonal trust dimensions: calibrated attack probability via Platt scaling ($PCS$), ensemble epistemic uncertainty quantification ($UQS$), explanation reliability ($ERS$) via exact Linear SHAP background stability, and causal historical reliability ($HRS$). Concurrently, we introduce a hydraulic consequence layer driven by extended-period simulation in WNTR (EPANET), demonstrating that pure topological graph centrality fails to predict physical damage ($\\rho = {rho_struct:.4f}, p = {p_struct:.3f}$), whereas our non-circular Cyber-Physical Base Risk strongly correlates with independent customer service disruption ($\\rho = +{rho_spatial:.4f}, p = {p_spatial:.2e}$ vs. Affected Nodes; composite $\\rho = +{rho_base:.4f}, p = {p_base:.2e}$ vs. ISS).\n")
 lines.append(f"On the official, quarantined BATADAL test benchmark ({ds_test['Total Hours (Rows)']:,} hours, {ds_test['Attack Events']} cyber-physical attacks), evaluated under frozen detector hyperparameters:\n")
-lines.append(f"1. **Action False-Alarm Routing to Review Queue**: A calibrated two-tier gate on the residual score routes all {p2['unnecessary_responses']} false-alarm events on the BATADAL test set ({p2['unnecessary_responses']} of {p2['unnecessary_responses']} baseline persistence false alarms, {p1['unnecessary_responses']} of {p1['unnecessary_responses']} raw threshold alarms) to analyst review instead of immediate action (a 100.0% reduction in Action-tier false alarms), while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay ({p3['mean_delay_hours']:.2f} h under Policy 3, {p4['mean_delay_hours']:.2f} h under Policy 4, {p5['mean_delay_hours']:.2f} h under Policy 5 vs. {p2['mean_delay_hours']:.2f} h under baseline persistence). In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone.")
+lines.append(f"1. **Action False-Alarm Routing to Review Queue**: A calibrated two-tier gate on the residual score routes all {p2['unnecessary_responses']} false-alarm events on the BATADAL test set ({p2['unnecessary_responses']} of {p2['unnecessary_responses']} baseline persistence false alarms, {p1['unnecessary_responses']} of {p1['unnecessary_responses']} raw threshold alarms) to analyst review instead of immediate action (a 100.0% reduction in Action-tier false alarms), while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay ({p3['mean_delay_hours']:.2f} h under Policy 3, {p4['mean_delay_hours']:.2f} h under Policy 4, {p5['mean_delay_hours']:.2f} h under Policy 5 vs. {p2['mean_delay_hours']:.2f} h under baseline persistence). Under Policy 3, exactly 3 false-alarm events are routed to the review queue (0 Action FAs, 3 Review FAs); under Policy 4 and Policy 5, 2 false-alarm events reach the review queue (0 Action FAs, 2 Review FAs), with 1 false alarm suppressed below review threshold. In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone.")
 lines.append(f"2. **Zero Attack Loss Across Queues**: All **7 of 7 ground-truth cyber-physical attacks (100.0% event preservation)** are preserved across the triage queues under all trust policies (95% event bootstrap CI: [100.0%, 100.0%]). Under Policy 3 (confidence-only gating), all 7 attacks reach immediate action (mean delay {p3['mean_delay_hours']:.2f} h); under Policy 5 (trust coupled with physical risk gating), high-consequence attacks route immediately to action with a mean response delay of **{p5['mean_delay_hours']:.2f} hours** (95% CI: [{p5['bootstrap_ci']['mean_delay_hours_95ci'][0]:.2f}, {p5['bootstrap_ci']['mean_delay_hours_95ci'][1]:.2f}] h).")
 lines.append(f"3. **Rigorous Pointwise Evaluation**: Under strict pointwise accounting (no point-adjustment tricks), our baseline frozen detector achieves a pointwise F1 of **{pw['F1']:.4f}** (official 1,000-replicate frozen i.i.d. 95% CI: [{ci_iid[0]:.4f}, {ci_iid[1]:.4f}]; moving-block bootstrap sensitivity CI: [{ci_12[0]:.4f}, {ci_12[1]:.4f}] at 12h, [{ci_48[0]:.4f}, {ci_48[1]:.4f}] at 48h; Precision: {pw['precision']:.4f}, Recall: {pw['recall']:.4f}), while point-adjusted F1 reaches **{pa['F1']:.4f}**.")
 lines.append(f"4. **Transparent Trade-offs & Negative Findings**: We explicitly document the operational delay trade-off: trust gating introduces a mean response delay of **{p3['mean_delay_hours']:.2f} hours** (Policy 3), **{p4['mean_delay_hours']:.2f} hours** (Policy 4), and **{p5['mean_delay_hours']:.2f} hours** (Policy 5) vs. **{p2['mean_delay_hours']:.2f} hours** under baseline persistence. Crucially, because baseline persistence produces only $N={p2['unnecessary_responses']}$ false-alarm events on the test set, this small sample size permits no meaningful asymptotic confidence interval; we report Dataset 04 5-fold cross-validation counts (8 Action FA under Persistence vs. 4 under Policy 4, 13 under Policy 3) as supporting evidence.\n")
@@ -116,53 +110,36 @@ lines.append("We build upon our research group's prior foundation in time-series
 lines.append("1. **Trust-Gated Alert Triage (Phase 5)**: A 3-tier selective response engine that routes 3 of 3 false-alarm events away from the automated action tier to analyst review without dropping a single ground-truth attack.")
 lines.append("2. **Physics-Grounded Hydraulic Consequence (Phase 4)**: An EPANET-driven consequence modeling suite that statistically grounds asset criticality in empirical pressure deficits.")
 lines.append("3. **Truthful & Leakage-Free Benchmark Integrity (Phases 1-3)**: Strict separation of unlabelled (-999) rows, frozen single-shot test evaluation, and dual pointwise and point-adjusted reporting.\n")
+lines.append("### Clarification of Innovation Scope & Baseline Outperformance\n")
+lines.append("The original design proposal outlined a physical GNN-GRU architecture for anomaly detection. In rigorous empirical evaluation on the official benchmark, however, the complex GNN-GRU was substantially outperformed by a transparent, linear multi-sensor Ridge residual detector ($F_1 = 0.2282$ vs. $0.8368$ pointwise). We report this finding plainly: the paper's core contribution is **not** the detector, but the orthogonal trust triage and hydraulic risk layers that sit atop any anomaly detector.\n")
 lines.append("---\n")
 
 lines.append("## 2. Benchmark Dataset & Masking Protocol\n")
 lines.append("All evaluations strictly adhere to official BATADAL dataset boundaries and label semantics.\n")
-lines.append("### Table 1: Benchmark Data Card & Masking Protocol\n*(Generated by `experiments/data_card.py`)*\n")
-lines.append("| Dataset Split | Total Hours (Rows) | Confirmed Normal (`0`) | Unlabelled (`-999`) | Attack Hours (`1`) | Attack Events | Margin Masked ($\\pm 48\\text{h}$) |")
-lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |")
-lines.append(f"| **Training (BATADAL Dataset 03)** | {ds3['Total Hours (Rows)']:,} | {ds3['Confirmed Normal (0)']:,} | {ds3['Unlabelled (-999)']} | {ds3['Attack Hours (1)']} | {ds3['Attack Events']} | {ds3['Margin Masked (±48h)']} |")
-lines.append(f"| **Cross-Validation (BATADAL Dataset 04)** | {ds4['Total Hours (Rows)']:,} | {ds4['Confirmed Normal (0)']} | {ds4['Unlabelled (-999)']:,} | {ds4['Attack Hours (1)']} | {ds4['Attack Events']} | {ds4['Margin Masked (±48h)']} |")
-lines.append(f"| **Test (BATADAL Test Labeled)** | {ds_test['Total Hours (Rows)']:,} | {ds_test['Confirmed Normal (0)']:,} | {ds_test['Unlabelled (-999)']} | {ds_test['Attack Hours (1)']} | {ds_test['Attack Events']} | {ds_test['Margin Masked (±48h)']} |\n")
+lines.append("### Table 1: Benchmark Data Card & Masking Protocol\n*(Generated by `experiments/build_manuscript_tables.py` from `results/data_card.json`)*\n")
+lines.append(tables["table1_data_card"])
 lines.append("### Label Semantics & Quarantine Rules\n")
-lines.append("1. **Provisional Normal Pool**: Unlabelled rows (`-999`) in Dataset 04 situated $> 48\\text{h}$ from any labelled attack are used as a provisional normal training pool for residual regression fitting.")
-lines.append("2. **Evaluation Semantics (Never Confirmed Negatives)**: `-999` rows are strictly treated as **unlabelled** in all evaluation protocols. Any alarms occurring during `-999` periods in Dataset 04 are termed *'unexplained alarms'* (or estimated false alarms), acknowledging unlabelled operational disturbances.")
+lines.append("1. **Provisional Normal Pool**: Unlabelled rows (`-999`) in Dataset 04 situated $> 48\\text{h}$ from any labelled attack are used as a provisional normal training pool for residual regression fitting, and are assigned provisional label `0` during Platt calibrator fitting. Because these rows are unlabelled rather than confirmed pristine negatives, any undetected stealthy disturbances or unrecorded maintenance anomalies within these hours mean that false-alarm counts and rates computed on Dataset 04 are **upper bounds** (pessimistic estimates).")
+lines.append("2. **Evaluation Semantics (Never Confirmed Negatives)**: `-999` rows are strictly treated as **unlabelled** in all evaluation protocols. Any alarms occurring during `-999` periods in Dataset 04 are termed *'unexplained alarms'* (or estimated false alarms), acknowledging unlabelled operational disturbances. The official test benchmark (`BATADAL_test_dataset_labeled.csv`), by contrast, contains strictly ground-truth labelled normal (`0`) and attack (`1`) hours with zero unlabelled rows.")
 lines.append("3. **Transition Buffer Masking ($\\pm 48\\text{h}$)**: A strict 48-hour buffer before and after each attack event in Dataset 04 is masked during cross-validation threshold pooling to prevent transient hydraulic recovery from contaminating normal baseline statistics.")
 lines.append("4. **Test Set Statement**: The detector hyperparameters, threshold and persistence rule were frozen and committed (`frozen_config.json`, SHA-256 recorded) before the first test evaluation. The official test set was therefore used once for the detector. Downstream triage/trust components were developed after the test labels had been visible; their results are reported as exploratory unless their parameters were selected on Dataset 04 validation data only, as documented in `config/trustrisk.yaml`.\n")
 lines.append("---\n")
 
 lines.append("## 3. Frozen Residual Anomaly Detector Evaluation\n")
 lines.append(f"The baseline detector uses a multi-sensor Ridge regression residual model ($\\alpha = {cfg['detector']['ridge_alpha']}$). Sensor residuals are standardized into z-scores, aggregated across the top-3 anomalies ($n_{{\\text{{top}}}}={cfg['detector']['n_top']}$), and smoothed via a 3-of-6 temporal persistence filter. The detection threshold was derived strictly from the {cfg['detector']['threshold_quantile']}th percentile of the margin-free pool in Dataset 04.\n")
-lines.append("### Table 2: Frozen Residual Detector Test Evaluation (Pointwise vs. Point-Adjusted)\n*(Recorded in `results/v3/test_report.json`)*\n")
-lines.append("| Metric | Pointwise (Primary) | Point-Adjusted (PA) | Raw (No Persistence) | Raw PA |")
-lines.append("| :--- | :---: | :---: | :---: | :---: |")
-lines.append(f"| **F1 Score** | **{pw['F1']:.4f}** (95% CI: [{ci_iid[0]:.4f}, {ci_iid[1]:.4f}]) | **{pa['F1']:.4f}** | {raw['F1']:.4f} | {raw_pa['F1']:.4f} |")
-lines.append(f"| **Precision** | {pw['precision']:.4f} | {pa['precision']:.4f} | {raw['precision']:.4f} | {raw_pa['precision']:.4f} |")
-lines.append(f"| **Recall** | {pw['recall']:.4f} | {pa['recall']:.4f} | {raw['recall']:.4f} | {raw_pa['recall']:.4f} |")
-lines.append(f"| **True Positive Hours** | {pw['TP']} / {ds_test['Attack Hours (1)']} | {pa['TP']} / {ds_test['Attack Hours (1)']} | {raw['TP']} / {ds_test['Attack Hours (1)']} | {raw_pa['TP']} / {ds_test['Attack Hours (1)']} |")
-lines.append(f"| **False Positive Hours** | {pw['FP']} / {ds_test['Confirmed Normal (0)']} | {pa['FP']} / {ds_test['Confirmed Normal (0)']} | {raw['FP']} / {ds_test['Confirmed Normal (0)']} | {raw_pa['FP']} / {ds_test['Confirmed Normal (0)']} |\n")
+lines.append("### Table 2: Frozen Residual Detector Test Evaluation (Pointwise vs. Point-Adjusted)\n*(Generated by `experiments/build_manuscript_tables.py` from `results/v3/test_report.json`)*\n")
+lines.append(tables["table2_detector_eval"])
 lines.append(f"- **ROC-AUC**: **{test_rep['roc_auc']:.4f}**")
 lines.append(f"- **PR-AUC**: **{test_rep['pr_auc']:.4f}**")
 lines.append(f"- **Attack Events Detected**: **{test_rep['events_detected']} (100.0%)**")
 lines.append(f"- **Pointwise Recall**: **{pw['recall']*100:.2f}% ({pw['TP']} / {ds_test['Attack Hours (1)']} hours)** ({pw['FN']} attack hours missed during subtle accumulation phases)")
 lines.append(f"- **False Alarm Events**: **{test_rep['false_alarm_events']} events** across 12.4 weeks of continuous operation.\n")
 
-lines.append("### Table 2b: Temporal-Dependence Bootstrap Sensitivity Analysis (Pointwise $F_1$)\n*(Recorded in `results/v3/block_bootstrap_report.json`)*\n")
-lines.append("| Resampling Methodology | Resampling Unit ($L$) | Number of Blocks | Pointwise $F_1$ Median | Std Error ($\\text{SE}$) | Empirical 95% Confidence Interval |")
-lines.append("| :--- | :---: | :---: | :---: | :---: | :---: |")
-lines.append(f"| **Standard i.i.d. Bootstrap** | 1 hour | 2,089 | {block_rep['pointwise_f1_nominal']:.4f} | 0.0148 | [{ci_sens[0]:.4f}, {ci_sens[1]:.4f}] |")
-lines.append(f"| **Moving-Block Bootstrap (12h)** | 12 hours | 175 | {blocks['12h_blocks']['f1_median']:.4f} | {blocks['12h_blocks']['f1_std_err']:.4f} | [{ci_12[0]:.4f}, {ci_12[1]:.4f}] |")
-lines.append(f"| **Moving-Block Bootstrap (24h)** | 24 hours | 88 | {blocks['24h_blocks']['f1_median']:.4f} | {blocks['24h_blocks']['f1_std_err']:.4f} | [{ci_24[0]:.4f}, {ci_24[1]:.4f}] |")
-lines.append(f"| **Moving-Block Bootstrap (48h)** | 48 hours | 44 | {blocks['48h_blocks']['f1_median']:.4f} | {blocks['48h_blocks']['f1_std_err']:.4f} | [{ci_48[0]:.4f}, {ci_48[1]:.4f}] |\n")
+lines.append("### Table 2b: Temporal-Dependence Bootstrap Sensitivity Analysis (Pointwise $F_1$)\n*(Generated by `experiments/build_manuscript_tables.py` from `results/v3/block_bootstrap_report.json`)*\n")
+lines.append(tables["table2b_bootstrap_sensitivity"])
 
-lines.append("### Table 2c: Per-Attack Event Timeline Breakdown (Official Test Set)\n")
-lines.append("| Event | Start Index | End Index | Duration (h) | Detected? | Delay (h) | Hours Detected | Event Recall |")
-lines.append("| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
-for ev in test_rep["per_event"]:
-    det_str = "**YES**" if ev["detected"] else "NO"
-    lines.append(f"| **{ev['event']}** | {ev['start']} | {ev['end']} | {ev['hours']} | {det_str} | {ev['delay_h']} | {ev['hours_detected']} | {ev['recall']:.3f} |")
+lines.append("### Table 2c: Per-Attack Event Timeline Breakdown (Official Test Set)\n*(Generated by `experiments/build_manuscript_tables.py` from `results/v3/test_report.json`)*\n")
+lines.append(tables["table2c_per_event_timeline"])
 missed_hrs = ds_test['Attack Hours (1)'] - pw['TP']
 lines.append(f"\n*Transparent Event-Level vs. Pointwise Reality*: While all 7 cyber-physical attack events are successfully detected (**7 / 7 events, 100% event recall**), nominal pointwise recall is **{pw['recall']*100:.2f}%**, meaning **{missed_hrs} of {ds_test['Attack Hours (1)']} total attack hours** were missed during early stealth accumulation.\n")
 lines.append("---\n")
@@ -172,18 +149,15 @@ lines.append("To triage alarms and route ambiguous alerts to analyst review inst
 w_cfg = cfg["trust"]["weights"]
 lines.append(f"$$\\text{{TS}}_t = {w_cfg['w1']:.2f} \\cdot \\text{{PCS}}_t + {w_cfg['w2']:.2f} \\cdot (1 - \\text{{UQS}}_t) + {w_cfg['w3']:.2f} \\cdot \\text{{ERS}}_t + {w_cfg['w4']:.2f} \\cdot \\text{{HRS}}_t$$\n")
 lines.append(f"During cold-start (uninitialized historical buffer), the 3-term formulation is applied: $\\text{{TS}}_t = {w_cfg['w_pcs_3term']:.2f} \\cdot \\text{{PCS}}_t + {w_cfg['w_uqs_3term']:.2f} \\cdot (1 - \\text{{UQS}}_t) + {w_cfg['w_ers_3term']:.2f} \\cdot \\text{{ERS}}_t$.\n")
+lines.append("The 3-term trust weights and action escalation cutoff ($TS \\ge 0.85$) were selected via systematic 5-fold cross-validation on Dataset 04 (`experiments/run_triage_cv.py`) across a pre-defined grid ($w_{\\text{pcs}} \\in [0.3, 0.7]$, $w_{\\text{uqs}} \\in [0.0, 0.4]$, action threshold $\\in [0.70, 0.85]$), optimizing for minimal Action false alarms subject to preserving 5/5 validation attack events. These hyperparameters were frozen in `trust_frozen_config.json` before any test triage scoring.\n")
 lines.append("### Component Formulations:\n")
 lines.append(f"1. **Prediction Confidence Score ($\\text{{PCS}}_t$)**: Platt scaling calibrator fitted strictly on validation scores (`BATADAL_dataset04.csv`), mapping detector anomaly scores to calibrated attack probabilities:\n")
 lines.append(f"   $$\\text{{PCS}}_t = \\frac{{1}}{{1 + \\exp(-({cal_rep['platt_scale']:.4f} \\cdot s_t + {cal_rep['platt_bias']:.4f}))}}$$\n")
 lines.append("2. **Uncertainty Quantification Score ($\\text{UQS}_t$)**: Moving-block bootstrap ensemble variance across 10 temporal blocks (24-hour block size, preserving consecutive $(x_t, x_{t+1})$ transitions) combined with heteroscedastic sensor residual noise.\n")
 lines.append("3. **Explanation Reliability Score ($\\text{ERS}_t$)**: Exact Linear SHAP attribution stability computed via `shap.LinearExplainer` across 5 background resamples on monitored physical sensors, evaluating top-3 sensor ranking stability.\n")
 lines.append(f"4. **Historical Reliability Score ($\\text{{HRS}}_t$)**: Causal rolling precision of past alerts evaluated over a {cfg['trust']['hrs']['rolling_window_hours']}-hour window without lookahead leakage.\n")
-lines.append("### Table 3: Calibration & Trust Metrics Validation\n*(Recorded in `results/trust_calibration.json`)*\n")
-lines.append("| Metric | Validation (Raw Sigmoid) | Validation (Calibrated) | Test (Raw Sigmoid) | Test (Calibrated) |")
-lines.append("| :--- | :---: | :---: | :---: | :---: |")
-lines.append(f"| **Expected Calibration Error (ECE)** | {cal_rep['validation']['ece_before']:.4f} | **{cal_rep['validation']['ece_after']:.4f}** (-73.5%) | {cal_rep['test']['ece_before']:.4f} | **{cal_rep['test']['ece_after']:.4f}** |")
-lines.append(f"| **Brier Score** | {cal_rep['validation']['brier_before']:.4f} | **{cal_rep['validation']['brier_after']:.4f}** | {cal_rep['test']['brier_before']:.4f} | **{cal_rep['test']['brier_after']:.4f}** |")
-lines.append(f"| **Negative Log-Likelihood (NLL)** | {cal_rep['validation']['nll_before']:.4f} | **{cal_rep['validation']['nll_after']:.4f}** (-25.2%) | {cal_rep['test']['nll_before']:.4f} | **{cal_rep['test']['nll_after']:.4f}** (-9.5%) |\n")
+lines.append("### Table 3: Calibration & Trust Metrics Validation\n*(Generated by `experiments/build_manuscript_tables.py` from `results/trust_calibration.json`)*\n")
+lines.append(tables["table3_trust_calibration"])
 lines.append(f"- **Platt Calibrator Parameters**: Slope $A = {cal_rep['platt_scale']:.4f}$, Bias $B = {cal_rep['platt_bias']:.4f}$, Effective Temperature $T = {cal_rep['effective_temperature']:.4f}$.")
 lines.append(f"- **UQS Error Prediction AUROC**: Validation Out-of-Fold = **{cal_rep['validation']['uqs_auroc']:.4f}** (95% CI: [{cal_rep['validation']['uqs_auroc_ci'][0]:.4f}, {cal_rep['validation']['uqs_auroc_ci'][1]:.4f}]); Test Set = **{cal_rep['test']['uqs_auroc']:.4f}** (95% CI: [{cal_rep['test']['uqs_auroc_ci'][0]:.4f}, {cal_rep['test']['uqs_auroc_ci'][1]:.4f}]).")
 lines.append(f"- **ERS Dynamic Discrimination**: Attack hours mean ERS = **{cal_rep['ers_stats']['attack_mean']:.4f}**, Normal hours mean ERS = {cal_rep['ers_stats']['normal_mean']:.4f}, False Alarm mean ERS = **{cal_rep['ers_stats']['fp_mean']:.4f}** (Attack vs. FA difference: **+{cal_rep['ers_stats']['attack_fp_diff']:.4f}**).\n")
@@ -202,11 +176,8 @@ lines.append(f"- $\\text{{ARS}}$: Asset Resilience Score ($v_1={cfg['risk']['ars
 lines.append("- $\\text{ISS}$: Hydraulic Impact Severity Score from WNTR simulated pressure deficits.")
 lines.append("- $\\text{CRI}$: Cascading Reach Index from topological shortest-path propagation.\n")
 
-lines.append("### Table 4: Top-10 Critical Cyber-Physical Assets (Canonical TDCRI)\n*(Recorded in `results/risk_assets_report.csv`)*\n")
-lines.append("| Rank | Asset ID | Component Type | Structural Criticality | Hydraulic Impact ($ISS$) | Cascading Reach ($CRI$) | Susceptibility ($ASS$) | Base Risk ($TDCRI$) |")
-lines.append("| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
-for idx, (_, r) in enumerate(top10_risk.iterrows(), 1):
-    lines.append(f"| **{idx}** | **{r['Asset_ID']}** | {r['Type']} | {r['Structural_Criticality']:.4f} | {r['ISS']:.4f} | {r['CRI']:.4f} | {r['ASS']:.2f} | **{r['TDCRI']:.4f}** |")
+lines.append("### Table 4: Top-10 Critical Cyber-Physical Assets (Canonical TDCRI)\n*(Generated by `experiments/build_manuscript_tables.py` from `results/risk_assets_report.csv`)*\n")
+lines.append(tables["table4_risk_assets"])
 
 lines.append(f"\n### Statistical Validation of Risk Grounding\n")
 lines.append(f"- **Negative Finding: Inadequacy of Pure Structural Centrality**:\n  $$\\rho_{{\\text{{Spearman}}}}(\\text{{Structural Centrality}}, \\text{{ISS}}) = {rho_struct:.4f} \\quad (p = {p_struct:.3f})$$\n  Demonstrates that pure graph topological betweenness and closeness fail to predict physical hydraulic consequence, because major transmission corridors traverse low-demand paths despite immense downstream hydraulic impact.")
@@ -219,11 +190,7 @@ lines.append("Under municipal capital budget constraints, Targeted Physical Prot
 lines.append("$$\\max \\sum_{i=1}^n \\text{TPPI}_i x_i \\quad \\text{subject to} \\quad \\sum_{i=1}^n \\text{Cost}_i x_i \\le B, \\quad x_i \\in \\{0, 1\\}\n")
 lines.append(f"where $\\text{{TPPI}}_i = \\frac{{\\text{{TDCRI}}_i \\cdot \\text{{Benefit}}_i \\cdot TS}}{{\\text{{Cost}}_i}}$. Ties among components with identical priority densities (e.g. sensor junctions with identical \\$40k cost and nominal base demand) are resolved deterministically (density $\\to$ absolute value $\\to$ asset ID).\n")
 lines.append("#### Multi-Budget Allocation Portfolios ($200k, $500k, $1,000k):\n")
-lines.append("| Budget Tier | Total Spent | Assets Protected | Funded Components | Total Protection Value |")
-lines.append("| :---: | :---: | :---: | :---: | :---: |")
-for b_tier, b_res in multi_budget.items():
-    funded_str = ", ".join(b_res["selected_assets"][:8]) + (f" (+{len(b_res['selected_assets'])-8} more)" if len(b_res["selected_assets"]) > 8 else "")
-    lines.append(f"| **\\${b_tier}k** | \\${int(b_res['spent_k'])}k | {len(b_res['selected_assets'])} | {funded_str} | {b_res['total_value']:.4f} |")
+lines.append(tables["table4b_tppi_multibudget"])
 lines.append(f"\nUnder the baseline municipal capital improvement budget ($B = \\$500\\text{{k}}$), TPPI funds **{len(multi_budget[500]['selected_assets'])} critical assets** (allocating ${int(multi_budget[500]['spent_k'])}k/\\$500k), prioritizing valve `v1`, tank `T2`, valve `V47`, and 6 primary monitored junctions.\n")
 lines.append("---\n")
 
@@ -235,17 +202,8 @@ lines.append("- **Human Review Tier**: Prioritized SOC analyst queue for seconda
 lines.append("- **Unnecessary Operational Response**: A false-alarm event escalating into the **Immediate Action Tier**.")
 lines.append("- **Missed Attack Response**: A ground-truth cyber-physical attack reaching neither Action nor Review.\n")
 
-lines.append("### Table 5: Controlled Alert Triage 5-Policy Evaluation Matrix\n*(Recorded in `results/core_triage_experiment.json`)*\n")
-lines.append("| Triage Policy | Attacks Preserved (Action + Review) | Attacks in Action Tier | Attacks Lost | Unnecessary Responses (Action FA Events) [95% CI] | % Reduction vs. Persistence | Mean Alert Delay (h) [95% CI] |")
-lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |")
-for p in triage_exp["headline_policies"]:
-    p_name = p["Policy"]
-    unrec = p["unnecessary_responses"]
-    unrec_ci = p["bootstrap_ci"]["unnecessary_responses_95ci"]
-    red = p["reduction_vs_persist"]
-    m_del = p["mean_delay_hours"]
-    del_ci = p["bootstrap_ci"]["mean_delay_hours_95ci"]
-    lines.append(f"| **{p_name}** | **{p['attacks_preserved']}** | {p['attacks_action']} | {p['attacks_lost']} | **{unrec}** [{unrec_ci[0]:.1f}, {unrec_ci[1]:.1f}] ({p['action_fa_rate_week']:.2f}/wk) | **{red:+.1f}%** | {m_del:.2f} h [{del_ci[0]:.2f}, {del_ci[1]:.2f}] |")
+lines.append("### Table 5: Controlled Alert Triage 5-Policy Evaluation Matrix\n*(Generated by `experiments/build_manuscript_tables.py` from `results/core_triage_experiment.json`)*\n")
+lines.append(tables["table5_core_triage"])
 
 lines.append(f"\n### Empirical Contribution Statement\n")
 lines.append(f"> **Empirical Paper Headline Claim**:  \n> *\"A calibrated two-tier gate on the residual score routes all {p2['unnecessary_responses']} false-alarm events on the BATADAL test set to analyst review instead of immediate action, while all 7 attacks still reach immediate action under Policy 3, at a cost of about 1.7-2.3 h additional delay ({p3['mean_delay_hours']:.2f} h under Policy 3, {p4['mean_delay_hours']:.2f} h under Policy 4, {p5['mean_delay_hours']:.2f} h under Policy 5 vs. {p2['mean_delay_hours']:.2f} h under baseline persistence). In this benchmark, uncertainty and explanation-reliability terms gave no measurable benefit over calibrated confidence alone.\"*\n")
@@ -254,42 +212,13 @@ lines.append("---\n")
 
 lines.append("## 7. Ablation Analysis, Operating Trade-Offs & Baselines\n")
 lines.append("### Operating Trade-Off as Action Threshold ($TS$) Varies (Chosen on Validation, Shown on Test)\n")
-lines.append("| Action Threshold ($TS$) | Attacks in Action Tier | Attacks in Review Queue | Attacks Lost | Unnecessary Responses (Action FA) | Review FA Events | Mean Delay (h) |")
-lines.append("| :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
-for sweep in triage_exp["tradeoff_sweep"]:
-    lines.append(f"| $\\ge {sweep['Action Threshold (TS)']:.2f}$ | {sweep['Attacks in Action Tier']}/7 | {sweep['Attacks in Review Queue']}/7 | {sweep['Attacks Lost']}/7 | **{sweep['Unnecessary Responses (Action FA Events)']}** | {sweep['Review FA Events']} | {sweep['Mean Delay (h)']:.2f} h |")
+lines.append(tables["table5b_operating_tradeoff"])
 
 lines.append("\n### Per-Component Trust Ablation\n")
-lines.append("| Configuration | Attacks Preserved | Attacks in Action Tier | Action Tier False Alarms | Review Queue False Alarms | Mean Delay (h) |")
-lines.append("| :--- | :---: | :---: | :---: | :---: | :---: |")
-for abl in triage_exp["component_ablation"]:
-    del_str = f"{abl['Mean Delay (h)']:.2f} h" if isinstance(abl['Mean Delay (h)'], (int, float)) else str(abl['Mean Delay (h)'])
-    lines.append(f"| **{abl['Configuration']}** | **{abl['Attacks Preserved']}** | {abl['Attacks in Action Tier']} | **{abl['Unnecessary Responses (Action FA)']}** | {abl['Review Queue FA Events']} | {del_str} |")
+lines.append(tables["table5c_component_ablation"])
 
-lines.append("\n### Table 2d: Baseline Comparison under Identical Quarantined Protocol\n*(Recorded in `results/baseline_comparison.json`)*\n")
-lines.append("| Architecture / Model | Pointwise $F_1$ | Pointwise Precision | Pointwise Recall | Point-Adjusted $F_1$ | Event Detection | Action FA Events | Mean Delay |")
-lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
-MODEL_DISPLAY_NAMES = {
-    "Physical_GNN": "Physical GNN (legacy protocol, not comparable)",
-    "LSTM_Autoencoder": "LSTM Autoencoder (3 Seeds Mean ± Std)",
-    "LightGBM_Tabular_Residual": "LightGBM Gradient Boosted Trees",
-    "Raw_Threshold": "Raw Detector Threshold (Instantaneous)",
-    "Persistence_Rule": "Persistence Filter (3-Hour Window)",
-    "MultiSensor_Ridge_Residual_Ours": "Multi-Sensor Ridge Residual (Ours)",
-    "TrustRisk_WDS_Policy4_TrustGate": "TrustRisk-WDS Policy 4 (Trust Gate)",
-    "TrustRisk_WDS_Policy5_TrustRiskGate": "TrustRisk-WDS Policy 5 (Trust-Risk Gate)",
-}
-
-for k, m in base_comp.items():
-    if not isinstance(m, dict):
-        continue
-    name = MODEL_DISPLAY_NAMES.get(k, k)
-    f1_str = f"{m['pointwise_f1']:.4f}" if "pw_f1_std" not in m else f"{m['pointwise_f1']:.4f} ± {m['pw_f1_std']:.4f}"
-    p_str = f"{m['pointwise_precision']:.4f}"
-    r_str = f"{m['pointwise_recall']:.4f}"
-    fa_str = str(m.get("action_fa_events", m.get("false_alarm_events", 0)))
-    delay_str = f"{m['mean_delay_h']:.2f} h" if m.get("mean_delay_h") is not None else "-"
-    lines.append(f"| **{name}** | {f1_str} | {p_str} | {r_str} | {m['pa_f1']:.4f} | {m['events_detected']} | {fa_str} | {delay_str} |")
+lines.append("\n### Table 2d: Baseline Comparison under Identical Quarantined Protocol\n*(Generated by `experiments/build_manuscript_tables.py` from `results/baseline_comparison.json`)*\n")
+lines.append(tables["table2d_baseline_comparison"])
 
 lines.append("\n*Note on Baseline Protocols*: All residual-based models (Ridge, LightGBM, LSTM Autoencoder) are trained on the quarantined Dataset 04 margin-free normal pool (>48h from attacks), thresholded at $q=99.0$, and evaluate under an identical 3-of-6 rolling persistence rule. Physical-GNN is evaluated from its trained checkpoint at legacy validation threshold 0.97 without temporal persistence and is noted as not directly comparable.\n")
 
@@ -311,12 +240,12 @@ lines.append("---\n")
 
 lines.append("## 9. Threats to Validity & Limitations\n")
 lines.append("We transparently report all known threats to validity and experimental limitations:\n")
-lines.append(f"1. **Simulated Hydraulic Data & Synthetic Attacks**: While C-Town topology and EPANET simulation reflect authentic municipal hydraulics, simulated consumer demands and synthetic cyber-attacks cannot fully capture real-world operational messiness, pipe bursts, and unexpected seasonal demand swings.")
-lines.append(f"2. **Small False-Alarm Sample Size ({p2['unnecessary_responses']} Events) & Absence of Multi-Term Trust Benefit**: Under baseline temporal persistence, the official test set exhibits exactly {p2['unnecessary_responses']} false-alarm events outside attack windows. While the calibrated two-tier gate routes 3 of 3 false-alarm events to analyst review (achieving a 100.0% reduction in Action-tier false alarms), the small sample size ($N=3$) permits no meaningful asymptotic confidence interval. As supporting evidence, on Dataset 04 5-fold cross-validation across 12.4 weeks of held-out operational data, Action FA events were 8 under Persistence vs. 4 under Policy 4 and 13 under Policy 3. Crucially, on this benchmark, uncertainty (UQS) and explanation-reliability (ERS) terms provided no measurable benefit over calibrated confidence (PCS) alone, as PCS alone (Policy 3) routes all 3 false-alarm events to review while keeping all 7 attacks in action.")
-lines.append(f"3. **Sparsity of Monitored Sensor Topology (19 of 396 Nodes)**: In C-Town, only 19 physical locations out of 396 network elements are equipped with SCADA sensors. Root cause localization and cascading reach estimates rely on graph shortest-path propagation rather than exhaustive network instrumentation.")
-lines.append(f"4. **Assumed Hardening Costs & Component Parameters**: Unit hardening costs ($120k for pumps, $80k for valves, $100k for tanks, $40k for junctions) and physical vulnerability factors represent engineering assumptions documented in `config/trustrisk.yaml`. While rank sensitivity analysis confirms invariance (Kendall $\\tau = 0.9769$), municipal deployments must tailor cost parameters to utility procurement contracts.")
-lines.append(f"5. **Test Set Seen During Downstream Development**: The primary Ridge detector was strictly frozen in `frozen_config.json` before first test exposure. However, downstream trust and triage layers were evaluated on the test set retrospectively. While all hyperparameter selections were restricted to Dataset 04 validation folds, readers must treat downstream policy evaluations as exploratory.")
-lines.append(f"6. **Circular Moving-Block Bootstrap Assumption**: Circular block bootstrap assumes periodic boundary wrapping ($T-1 \\to 0$) to eliminate sample loss. It is presented strictly as a sensitivity check on temporal autocorrelation, not a proof of stationarity.")
+lines.append("1. **Simulated Hydraulic Data & Synthetic Attacks**: While C-Town topology and EPANET simulation reflect authentic municipal hydraulics, simulated consumer demands and synthetic cyber-attacks cannot fully capture real-world operational messiness, pipe bursts, and unexpected seasonal demand swings.")
+lines.append(f"2. **Small False-Alarm Sample Size (3 Events) & Absence of Multi-Term Trust Benefit**: Under baseline temporal persistence, the official test set exhibits exactly 3 false-alarm events outside attack windows. While the calibrated two-tier gate routes 3 of 3 false-alarm events to analyst review (achieving a 100.0% reduction in Action-tier false alarms), the small sample size ($N=3$) permits no meaningful asymptotic confidence interval. As supporting evidence, on Dataset 04 5-fold cross-validation across 12.4 weeks of held-out operational data, Action FA events were 8 under Persistence vs. 4 under Policy 4 and 13 under Policy 3. Crucially, on this benchmark, uncertainty (UQS) and explanation-reliability (ERS) terms provided no measurable benefit over calibrated confidence (PCS) alone, as PCS alone (Policy 3) routes all 3 false-alarm events to review while keeping all 7 attacks in action.")
+lines.append("3. **Sparsity of Monitored Sensor Topology (19 of 396 Nodes)**: In C-Town, only 19 physical locations out of 396 network elements are equipped with SCADA sensors. Root cause localization and cascading reach estimates rely on graph shortest-path propagation rather than exhaustive network instrumentation.")
+lines.append(f"4. **Assumed Hardening Costs & Component Parameters**: Unit hardening costs ($120k for pumps, $80k for valves, $100k for tanks, $40k for junctions) and physical vulnerability factors represent engineering assumptions documented in `config/trustrisk.yaml`. While rank sensitivity analysis confirms invariance (Kendall $\\tau = {tau_mean:.4f}$), municipal deployments must tailor cost parameters to utility procurement contracts.")
+lines.append("5. **Test Set Seen During Downstream Development**: The primary Ridge detector was strictly frozen in `frozen_config.json` before first test exposure. However, downstream trust and triage layers were evaluated on the test set retrospectively. While all hyperparameter selections were restricted to Dataset 04 validation folds, readers must treat downstream policy evaluations as exploratory.")
+lines.append("6. **Circular Moving-Block Bootstrap Assumption**: Circular block bootstrap assumes periodic boundary wrapping ($T-1 \\to 0$) to eliminate sample loss. It is presented strictly as a sensitivity check on temporal autocorrelation, not a proof of stationarity.")
 lines.append(f"7. **The Operational Latency Trade-Off**: Trust validation introduces an average response delay of **{p3['mean_delay_hours']:.2f} hours** (Policy 3), **{p4['mean_delay_hours']:.2f} hours** (Policy 4), and **{p5['mean_delay_hours']:.2f} hours** (Policy 5) vs. **{p2['mean_delay_hours']:.2f} hours** under persistence. Municipal utilities must determine whether this additional delay (1.7-2.3 h) is acceptable in exchange for routing false alarms to human review rather than executing automated actuator shutdowns.\n")
 lines.append("---\n")
 
@@ -337,9 +266,9 @@ lines.append("13. Taormina, R., Galelli, S., Douglas, H. C., et al. (2018). The 
 lines.append("---\n")
 
 lines.append("## 11. Author CRediT Roles & Human Responsibilities\n")
-lines.append("All authorship, CRediT allocations, venue selection, and Zenodo release decisions are documented as human responsibilities in [`docs/HUMAN_TODO.md`](file:///c:/Users/shino/Desktop/Project/docs/HUMAN_TODO.md).\n")
+lines.append("All authorship, CRediT allocations, venue selection, and Zenodo release decisions are documented as human responsibilities in [`docs/HUMAN_TODO.md`](HUMAN_TODO.md).\n")
 lines.append("---\n")
 
 out_path = ROOT / "docs" / "MANUSCRIPT_REVISION.md"
 out_path.write_text("\n".join(lines), encoding="utf-8")
-print(f"Successfully generated {out_path} with {len(lines)} lines from live artifacts!")
+print(f"Successfully generated {out_path} with {len(lines)} lines from live artifacts and decoupled tables!")

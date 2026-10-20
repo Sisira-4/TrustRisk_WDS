@@ -1,0 +1,7 @@
+| Configuration | Attacks Preserved | Attacks in Action Tier | Action Tier False Alarms | Review Queue False Alarms | Mean Delay (h) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Full Trust Score (3-term: 0.30 PCS + 0.40(1-UQS) + 0.30 ERS)** | **7/7** | 1 | **0** | 2 | 5.71 h |
+| **Ablate PCS (w_uqs=0.57, w_ers=0.43)** | **5/7** | 0 | **0** | 3 | 17.71 h |
+| **Ablate UQS (w_pcs=0.50, w_ers=0.50)** | **7/7** | 7 | **0** | 3 | 6.57 h |
+| **Ablate ERS (w_pcs=0.43, w_uqs=0.57)** | **3/7** | 0 | **0** | 0 | 27.29 h |
+| **Ablate Risk Gate (Policy 4 Trust-Only vs Policy 5 Risk-Gated)** | **7/7** | 1 (P4) vs 2 (P5) | **0** | 0 | 5.71h (P4) vs 6.86h (P5) |

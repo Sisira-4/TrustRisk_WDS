@@ -515,7 +515,7 @@ When components exhibit identical priority densities (e.g. monitored sensor junc
     else:
         report_md += "- No identical tie groups detected above threshold.\n"
 
-    report_md += f"""
+    report_md += rf"""
 ### B. Multi-Budget Allocation Sensitivity (\$200k, \$500k, \$1,000k)
 
 | Budget Tier | Total Spent | Assets Protected | Funded Components | Total Value |
@@ -526,7 +526,7 @@ When components exhibit identical priority densities (e.g. monitored sensor junc
         assets_str = ", ".join(b_info["selected_assets"])
         report_md += f"| **\\${b_val}k** | \\${b_info['spent_k']}k | {b_info['asset_count']} | {assets_str} | {b_info['total_value']:.4f} |\n"
 
-    report_md += f"""
+    report_md += rf"""
 ### C. Detailed \$500k Baseline Protection Allocation
 
 | Selected Asset | Type | Unit Cost | Protection Benefit | TPPI Priority Score |

@@ -48,12 +48,12 @@ To guarantee absolute experimental reproducibility and tamper-evident provenance
 
 | File / Artifact Path | Canonical Description | SHA-256 Cryptographic Hash |
 | :--- | :--- | :--- |
-| [`frozen_config.json`](file:///c:/Users/shino/Desktop/Project/frozen_config.json) | Frozen Detector Hyperparameter Specification | `3d5733ccc4f90b193d890250db7370631c5bb0f7a75f13d2d2e7c83e46528a6e` |
-| [`results/v3/test_report.json`](file:///c:/Users/shino/Desktop/Project/results/v3/test_report.json) | Official Quarantined Single-Shot Evaluation | `473b62481cba954c8462e0b123730a6ac0b2534fc05f3c7134c1331080f7f54e` |
-| [`results/core_triage_experiment.json`](file:///c:/Users/shino/Desktop/Project/results/core_triage_experiment.json) | 5-Policy Alert Triage Matrix Outcomes | `a7576ad404ea71d1e7693241e0f4e5466b4658e67ca068cb102a8e05960f4111` |
-| [`results/baseline_comparison.json`](file:///c:/Users/shino/Desktop/Project/results/baseline_comparison.json) | Identical-Protocol Baseline Evaluation | `6bed987263adb04e1f2a2823882566ea981c3535f24e5a27342ad400a95cb0f5` |
-| [`results/risk_assets_report.csv`](file:///c:/Users/shino/Desktop/Project/results/risk_assets_report.csv) | WNTR Extended-Period Hydraulic Simulation Results | `9f432e6bb372864ccd09f854bccb42edcaf56afb1c775e70b62235db5bbfc5bd` |
-| [`network/epanet/CTOWN.INP`](file:///c:/Users/shino/Desktop/Project/network/epanet/CTOWN.INP) | Benchmark C-Town Network Geometry | `9198b0bb43f551b29bfb550e206ff95f1df220118fc0068c7f130cec78d58d9e` |
+| [`frozen_config.json`](../frozen_config.json) | Frozen Detector Hyperparameter Specification | `3d5733ccc4f90b193d890250db7370631c5bb0f7a75f13d2d2e7c83e46528a6e` |
+| [`results/v3/test_report.json`](../results/v3/test_report.json) | Official Quarantined Single-Shot Evaluation | `473b62481cba954c8462e0b123730a6ac0b2534fc05f3c7134c1331080f7f54e` |
+| [`results/core_triage_experiment.json`](../results/core_triage_experiment.json) | 5-Policy Alert Triage Matrix Outcomes | `a7576ad404ea71d1e7693241e0f4e5466b4658e67ca068cb102a8e05960f4111` |
+| [`results/baseline_comparison.json`](../results/baseline_comparison.json) | Identical-Protocol Baseline Evaluation | `6bed987263adb04e1f2a2823882566ea981c3535f24e5a27342ad400a95cb0f5` |
+| [`results/risk_assets_report.csv`](../results/risk_assets_report.csv) | WNTR Extended-Period Hydraulic Simulation Results | `9f432e6bb372864ccd09f854bccb42edcaf56afb1c775e70b62235db5bbfc5bd` |
+| [`network/epanet/CTOWN.INP`](../network/epanet/CTOWN.INP) | Benchmark C-Town Network Geometry | `9198b0bb43f551b29bfb550e206ff95f1df220118fc0068c7f130cec78d58d9e` |
 
 ---
 
