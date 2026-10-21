@@ -445,6 +445,41 @@ def build_table_5c_component_ablation(triage_exp: dict) -> Tuple[str, str]:
     return md_content, tex_content
 
 
+def build_table_6_wntr_benchmark(wntr_rep: dict) -> Tuple[str, str]:
+    """Table 6: Second Benchmark (WNTR C-Town 14-Day Synthetic Triage)."""
+    policies = wntr_rep["policies"]
+    md_lines = [
+        "| Triage Policy | Attacks Preserved (Action + Review) | Attacks in Action Tier | Action FA Events | Review FA Events | % Reduction vs. Persistence | Mean Alert Delay (h) |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |"
+    ]
+    tex_rows = []
+    for r in policies:
+        md_lines.append(
+            f"| **{r['policy']}** | **{r['attacks_preserved']}** | {r['attacks_in_action']} | **{r['action_fa_events']}** | {r['review_fa_events']} | **{r['reduction_vs_persist']}** | {r['mean_delay_hours']:.2f} h |"
+        )
+        p_clean = r['policy'].replace("&", r"\&").replace("%", r"\%")
+        tex_rows.append(
+            f"{p_clean} & \\textbf{{{r['attacks_preserved']}}} & {r['attacks_in_action']} & \\textbf{{{r['action_fa_events']}}} & {r['review_fa_events']} & {r['reduction_vs_persist']} & {r['mean_delay_hours']:.2f} h \\\\"
+        )
+
+    md_content = "\n".join(md_lines) + "\n"
+    tex_content = (
+        r"\begin{table}[htbp]" + "\n"
+        r"\centering" + "\n"
+        r"\caption{Independent WNTR C-Town Synthetic Benchmark Triage Evaluation}" + "\n"
+        r"\label{tab:wntr_benchmark}" + "\n"
+        r"\begin{tabular}{lcccccc}" + "\n"
+        r"\toprule" + "\n"
+        r"Triage Policy & Preserved & Action Tier & Action FA & Review FA & \% Reduction & Delay (h) \\" + "\n"
+        r"\midrule" + "\n" +
+        "\n".join(tex_rows) + "\n" +
+        r"\bottomrule" + "\n"
+        r"\end{tabular}" + "\n"
+        r"\end{table}" + "\n"
+    )
+    return md_content, tex_content
+
+
 def build_all_tables() -> Dict[str, str]:
     """Builds and writes all manuscript tables to disk."""
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
@@ -485,6 +520,12 @@ def build_all_tables() -> Dict[str, str]:
         "table5b_operating_tradeoff": build_table_5b_operating_tradeoff(triage_exp),
         "table5c_component_ablation": build_table_5c_component_ablation(triage_exp),
     }
+
+    wntr_rep_path = RESULTS_DIR / "wntr_benchmark_report.json"
+    if wntr_rep_path.exists():
+        with open(wntr_rep_path, "r", encoding="utf-8") as f:
+            wntr_rep = json.load(f)
+        tables["table6_wntr_benchmark"] = build_table_6_wntr_benchmark(wntr_rep)
 
     md_dict = {}
     for name, (md, tex) in tables.items():

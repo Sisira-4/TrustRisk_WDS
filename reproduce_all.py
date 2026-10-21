@@ -6,6 +6,7 @@ Reproduces all empirical tables and findings in the manuscript in a single execu
 - Table 3: Calibration & Trust Metrics (ECE, Brier, NLL, UQS AUROC, ERS dynamics)
 - Table 4: Hydraulic Consequence & Cyber-Physical Risk Validation (WNTR simulation, Spearman rho, TPPI)
 - Table 5: Controlled Alert Triage 5-Policy Evaluation Matrix (Action vs. Review queues, FA routing)
+- Table 6: WNTR C-Town Multi-Attack Benchmark Evaluation (14-day continuous simulation)
 
 Usage:
     python reproduce_all.py
@@ -171,6 +172,18 @@ def print_table_5():
         print("Core triage report not found.")
 
 
+def print_table_6():
+    """Prints Table 6: WNTR Multi-Attack Benchmark Evaluation."""
+    wntr_path = RESULTS_DIR / "wntr_benchmark_report.md"
+    print("\n" + "#"*70)
+    print("TABLE 6: WNTR C-TOWN MULTI-ATTACK BENCHMARK TRIAGE EVALUATION")
+    print("#"*70)
+    if wntr_path.exists():
+        print(wntr_path.read_text(encoding="utf-8").strip())
+    else:
+        print("WNTR benchmark report not found.")
+
+
 def validate_preflight(cfg, cfg_hash):
     """Fails loudly on missing inputs, missing models, or checkpoint discrepancies."""
     for key in ["train_normal_baseline", "train_cross_validation", "test_labeled", "network_inp"]:
@@ -201,6 +214,7 @@ def validate_postflight(cfg, cfg_hash):
         ROOT / "results" / "v3" / "block_bootstrap_report.json",
         ROOT / "results" / "baseline_comparison.json",
         ROOT / "results" / "core_triage_experiment.json",
+        ROOT / "results" / "wntr_benchmark_report.json",
     ]
     for rj in report_jsons:
         if not rj.exists():
@@ -272,6 +286,9 @@ def main():
         print(">> Single-shot quarantine locked (run_core_triage_experiment.py rerun blocker active to prevent test leakage).")
         print(f"{'='*70}")
 
+    # 8b. Run Second Independent Benchmark (Phase 5b WNTR C-Town Simulation & Triage)
+    run_phase_script("experiments/simulate_wntr_attack_benchmark.py", "Phase 5b Second Benchmark WNTR C-Town Simulation & Triage")
+
     # 9. Generate Publication Figures (Phases 3 & 6)
     run_phase_script("experiments/generate_publication_figures.py", "Phases 3 & 6 Publication Figures Generation")
 
@@ -290,6 +307,7 @@ def main():
     print_table_3()
     print_table_4()
     print_table_5()
+    print_table_6()
     
     # 11. Generate Run Manifest
     elapsed = time.time() - start_time

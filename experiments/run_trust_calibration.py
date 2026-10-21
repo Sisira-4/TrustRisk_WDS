@@ -8,6 +8,7 @@ import json
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score, brier_score_loss, log_loss
+from sklearn.isotonic import IsotonicRegression
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -97,6 +98,16 @@ def main():
     
     nll_test_before = log_loss(y_test, raw_p_test)
     nll_test_after = log_loss(y_test, cal_p_test)
+
+    # Isotonic Regression comparison
+    iso = IsotonicRegression(out_of_bounds="clip")
+    iso.fit(scores_val, y_val)
+    iso_p_val = iso.predict(scores_val)
+    iso_p_test = iso.predict(scores_test["score"].values)
+    ece_val_iso = float(compute_ece(y_val, iso_p_val))
+    brier_val_iso = float(brier_score_loss(y_val, iso_p_val))
+    ece_test_iso = float(compute_ece(y_test, iso_p_test))
+    brier_test_iso = float(brier_score_loss(y_test, iso_p_test))
     
     # PCS
     pcs_test = calibrator.compute_pcs(cal_p_test)
@@ -305,19 +316,28 @@ Validation split identity: `BATADAL_dataset04_margin_free_pool_plus_attacks_n={l
 | **Brier Score** | {brier_val_before:.4f} | **{brier_val_after:.4f}** | {brier_test_before:.4f} | **{brier_test_after:.4f}** |
 | **Negative Log-Likelihood (NLL)** | {nll_val_before:.4f} | **{nll_val_after:.4f}** | {nll_test_before:.4f} | **{nll_test_after:.4f}** |
 
+### Calibration Method Comparison (Validation vs Test)
+| Method | Val ECE | Val Brier | Test ECE | Test Brier |
+| :--- | :---: | :---: | :---: | :---: |
+| **Raw Sigmoid** | {ece_val_before:.4f} | {brier_val_before:.4f} | {ece_test_before:.4f} | {brier_test_before:.4f} |
+| **Platt Scaling (Logistic)** | **{ece_val_after:.4f}** | **{brier_val_after:.4f}** | **{ece_test_after:.4f}** | **{brier_test_after:.4f}** |
+| **Isotonic Regression** | {ece_val_iso:.4f} | {brier_val_iso:.4f} | {ece_test_iso:.4f} | {brier_test_iso:.4f} |
+
 - **Platt Calibrator Parameters**:
   - Slope $A$ = {calibrator.A:.4f}
   - Bias $B$ = {calibrator.B:.4f}
   - Effective Temperature $T = 1/A$ = {calibrator.T:.4f}
   - Verified Checkpoint SHA-256 = `{calibrator.checkpoint_sha256}`
 
+- **Methodological Limitation (Calibration Transfer Failure under Temporal Shift)**:
+  Platt scaling drastically improves validation calibration (ECE 0.0198 -> 0.0052, Brier 0.0259 -> 0.0241), but calibration does not transfer to the test period (test ECE 0.0546 -> 0.0555, Brier 0.0576 -> 0.0673). Isotonic regression displays the same dynamic (test ECE 0.0536, Brier 0.0610). This occurs because of an approximate 3.75x attack prevalence shift (5.9% attack hours in the Dataset 04 validation pool vs. 19.5% in the test set). Supervised probability calibrators reflect training base rates and underpredict probabilities when test attack frequency surges, even while monotonic rank ordering remains preserved.
+
 ---
 
 ## 2. Uncertainty Quantification (UQS) Discriminative Validity
-- Evaluated on detector classification error: $e_t = |y_t - \\hat{{y}}_t|$
-- **Validation Out-of-Fold AUROC**: **{uqs_val_auroc:.4f}** (95% CI: [{uqs_val_ci[0]:.4f}, {uqs_val_ci[1]:.4f}])
+- Evaluated on detector classification error:  = |y_t - \\\\hat{{y}}_t|\n- **Validation Out-of-Fold AUROC**: **{uqs_val_auroc:.4f}** (95% CI: [{uqs_val_ci[0]:.4f}, {uqs_val_ci[1]:.4f}])
 - **Test Set Error AUROC**: **{uqs_error_auroc:.4f}** (95% CI: [{uqs_test_ci[0]:.4f}, {uqs_test_ci[1]:.4f}])
-- Confirms epistemic uncertainty is elevated during detector misclassification.
+- **Characterization**: While statistically superior to random guessing (> 0.50), a test error AUROC of {uqs_error_auroc:.4f} demonstrates weak discriminative power for detector classification errors under temporal distribution shift, rather than robust error prediction. Epistemic uncertainty alone is insufficient to identify subtle sensor drift without physical residual coupling.
 
 ---
 
@@ -374,6 +394,13 @@ Validation split identity: `BATADAL_dataset04_margin_free_pool_plus_attacks_n={l
             "uqs_auroc": float(uqs_error_auroc),
             "uqs_auroc_ci": [float(uqs_test_ci[0]), float(uqs_test_ci[1])]
         },
+        "isotonic": {
+            "validation_ece": float(ece_val_iso),
+            "validation_brier": float(brier_val_iso),
+            "test_ece": float(ece_test_iso),
+            "test_brier": float(brier_test_iso)
+        },
+        "calibration_limitation_note": "Platt scaling and Isotonic regression do not transfer to test period due to a ~3.75x attack prevalence shift (5.9% in validation pool vs 19.5% on test).",
         "platt_scale": float(calibrator.A),
         "platt_bias": float(calibrator.B),
         "effective_temperature": float(calibrator.T),

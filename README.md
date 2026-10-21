@@ -1,7 +1,7 @@
 # TrustRisk-WDS: Trust-Gated Alert Triage & Hydraulic Risk Prioritization for Water Distribution Systems
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Tests Passing](https://img.shields.io/badge/pytest-35%20passed-brightgreen.svg)](tests/)
+[![Tests Passing](https://img.shields.io/badge/pytest-166%20passed-brightgreen.svg)](tests/)
 [![Dataset: BATADAL](https://img.shields.io/badge/dataset-BATADAL%20(C--Town)-orange.svg)](data/)
 [![Replication: 1--Command](https://img.shields.io/badge/reproduce_all.py-verified-success.svg)](reproduce_all.py)
 [![Guide Compliance](https://img.shields.io/badge/Guide%20Compliance-100%25%20Approved-brightgreen.svg)](docs/ACCEPTANCE_CHECKLIST.md)
@@ -23,6 +23,8 @@ By evaluating incoming detection residuals through a tripartite **Trust-Gating E
    - **Point-Adjusted F1**: **0.9879** (Precision: 0.9760, Recall: 1.0000)
    - **ROC-AUC**: **0.9180** | **PR-AUC**: **0.8684**
 5. **Physical Consequence Grounding & Non-Circularity**: We demonstrate that pure graph topological centrality alone fails to predict hydraulic consequence ($\rho = +0.0932, p = 0.600$), whereas our non-circular Cyber-Physical Base Risk strongly correlates with independent customer service disruption ($\rho = \mathbf{+0.5805}, p = 3.20 \times 10^{-4}$ vs. Affected Nodes; composite $\rho = \mathbf{+0.6109}, p = 1.24 \times 10^{-4}$ vs. ISS). Under 1,000 random weight perturbations ($\pm 20\%$), ranking stability yields mean Kendall's $\tau = \mathbf{0.9859}$.
+
+6. **Second Independent WNTR Benchmark (336 Hours, 4 Attacks)**: To validate alert triage beyond the 3 BATADAL test false alarms, a 14-day continuous simulation on C-Town with stochastic demands and 4 diverse cyber-physical attacks confirms 100% attack preservation (4/4 attacks detected) and a 25.0% reduction in Action-tier false alarms (1.50h mean delay).
 
 ---
 
@@ -48,7 +50,7 @@ To verify leakage guards, unit tests, trust engine calibration, baseline models,
 ```bash
 pytest -q
 ```
-*(Expected: 49 passed in ~6.5s, including mandatory headless Streamlit AppTest, single checkpoint SHA-256 verification, and baseline invariance verification).*
+*(Expected: 166 passed, including mandatory headless Streamlit AppTest, single checkpoint SHA-256 verification, second WNTR benchmark verification, and baseline invariance verification).*
 
 ### 4. Launch the Decision Support Dashboard
 To launch the interactive operational dashboard bound strictly to the clean pipeline outputs:
@@ -88,6 +90,7 @@ The TrustRisk-WDS framework evaluates strictly on the Battle of the Attack Detec
 | **Table 3** | **Calibrated Trust Validation** | `experiments/run_trust_calibration.py` | Validation ECE drops from 0.0198 $\to$ 0.0052 (-73.5%); UQS Error AUROC = 0.5994 (95% CI: [0.5460, 0.6485]); ERS discriminates attacks (0.9876) vs. false alarms (0.9211). |
 | **Table 4** | **Hydraulic Consequence & Risk** | `risk/hydraulic_simulation.py` | WNTR simulation on `CTOWN.INP`; Non-circular Base Risk $\rho = +0.5805$ ($p = 3.20 \times 10^{-4}$ vs Affected Nodes; composite $\rho = +0.6109$ vs ISS); Structural $\rho = +0.0932$ ($p = 0.600$); 1,000-trial Kendall mean $\tau = 0.9859$ (5th%: 0.9572); TPPI Knapsack ($200k, $500k, $1,000k budgets). |
 | **Table 5** | **Alert Triage 5-Policy Matrix** | `experiments/run_core_triage_experiment.py` | Routes 3 of 3 false-alarm events to review queue (100.0% reduction in Action FA); preserves 7/7 attacks; mean operational response delay = 6.57h (Policy 3), 5.71h (Policy 4), 6.86h (Policy 5). |
+| **Table 6** | **WNTR Multi-Attack Benchmark** | `experiments/simulate_wntr_attack_benchmark.py` | 14-day C-Town simulation (4 attacks, 240 normal hours); Policy 3 & 5 reduce Action FA by 25.0% (4 $\to$ 3 events) with 100% event recall (4/4 attacks, 1.50h delay). |
 | **Figures 1–5** | **Publication-Grade Visualizations** | `experiments/generate_publication_figures.py` | Data Card timeline (`fig1`), Calibration diagram (`fig2`), UQS/ERS dynamics (`fig3`), WNTR scatter (`fig4`), Triage trade-off (`fig5`). |
 
 ---
@@ -149,7 +152,8 @@ TrustRisk-WDS/
 │   └── RELEASE_AND_ZENODO.md   # Archival release guidelines, CRediT roles & Zenodo DOI manifest
 ├── scripts/
 │   └── generate_project_tree.py # Automated ASCII tree generator
-├── tests/                   # Full pytest suite (90 passing tests)
+├── legacy/                  # Superseded GNN models & exploratory scripts (with README)
+├── tests/                   # Full pytest suite (166 passing tests)
 ├── frozen_config.json       # Pre-committed frozen hyperparameters & checkpoint SHA-256
 ├── reproduce_all.py         # Master one-command replication suite
 ├── requirements.txt         # Pinned Python dependencies

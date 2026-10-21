@@ -171,7 +171,9 @@ def evaluate_predictions(preds_binary, scores_continuous, y_true, attack_events)
 def evaluate_physical_gnn(attack_events, y_te, datetimes):
     """Evaluates Physical-GNN baseline from models/gnn_gru/physical_gnn_gru_model_C.pth."""
     print("[*] Evaluating Physical-GNN Baseline (Graph Neural Network + Temporal GRU)...")
-    ckpt_path = ROOT / "models" / "gnn_gru" / "physical_gnn_gru_model_C.pth"
+    legacy_ckpt = ROOT / "legacy" / "models" / "gnn_gru" / "physical_gnn_gru_model_C.pth"
+    models_ckpt = ROOT / "models" / "gnn_gru" / "physical_gnn_gru_model_C.pth"
+    ckpt_path = legacy_ckpt if legacy_ckpt.exists() else models_ckpt
     test_proc_path = PROCESSED_DIR / "test_processed.csv"
     
     if not (ckpt_path.exists() and test_proc_path.exists()):
@@ -179,8 +181,18 @@ def evaluate_physical_gnn(attack_events, y_te, datetimes):
             f"Physical-GNN checkpoint {ckpt_path} or test dataset {test_proc_path} missing."
         )
 
-    from models.gnn_gru.train_gnn_gru_physical import PhysicalGNN_GRU, get_probs
-    from models.gnn_gru.physical_dataset import WDSPhysicalGraphDataset
+    import sys
+    legacy_dir = ROOT / "legacy"
+    if str(legacy_dir) not in sys.path:
+        sys.path.insert(0, str(legacy_dir))
+    try:
+        from legacy.models.gnn_gru.train_gnn_gru_physical import PhysicalGNN_GRU, get_probs
+    except ImportError:
+        from models.gnn_gru.train_gnn_gru_physical import PhysicalGNN_GRU, get_probs
+    try:
+        from legacy.models.gnn_gru.physical_dataset import WDSPhysicalGraphDataset
+    except ImportError:
+        from models.gnn_gru.physical_dataset import WDSPhysicalGraphDataset
     
     test_df = pd.read_csv(test_proc_path)
     test_ds = WDSPhysicalGraphDataset(test_df, str(ROOT), window_size=12, use_physical_attributes=False)

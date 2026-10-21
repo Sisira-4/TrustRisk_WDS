@@ -26,6 +26,13 @@
       0.6484605123402337
     ]
   },
+  "isotonic": {
+    "validation_ece": 2.304516306018973e-18,
+    "validation_brier": 0.02242088334143214,
+    "test_ece": 0.05362129988765031,
+    "test_brier": 0.06103106644287045
+  },
+  "calibration_limitation_note": "Platt scaling and Isotonic regression do not transfer to test period due to a ~3.75x attack prevalence shift (5.9% in validation pool vs 19.5% on test).",
   "platt_scale": 0.37500821840898335,
   "platt_bias": -4.653164104237502,
   "effective_temperature": 2.6666082259280026,

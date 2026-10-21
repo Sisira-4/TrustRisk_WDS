@@ -167,13 +167,14 @@ In accordance with Section 2 (Phase G) of the Master Prompt and Task 3.6 revisio
 ### - [x] Criterion 8: Negative Findings Reported Honestly
 - **Status**: **MET**
 - **Commits**: [`115e24f`](https://github.com/shinojacob7/TrustRisk_WDS/commit/115e24f), [`3dd983f`](https://github.com/shinojacob7/TrustRisk_WDS/commit/3dd983f), [`22bf601`](https://github.com/shinojacob7/TrustRisk_WDS/commit/22bf601)
-- **Description**: Six explicit negative findings are highlighted in the manuscript:
+- **Description**: Seven explicit negative findings are highlighted in the manuscript:
   1. **Detector Selection**: Physical GNN-GRU was outperformed by multi-sensor Ridge residual ($F_1 = 0.2282$ vs. $0.8368$ pointwise).
-  2. **Centrality Inadequacy**: Structural graph centrality fails to predict hydraulic consequence ($\rho = -0.1927, p = 0.2749$).
+  2. **Centrality Inadequacy**: Structural graph centrality fails to predict hydraulic consequence ($\\rho = +0.0932, p = 0.600$).
   3. **Multi-Term Inefficacy**: Uncertainty (UQS) and explanation reliability (ERS) terms provided no measurable benefit over calibrated confidence (PCS) alone on this benchmark.
-  4. **Test UQS AUROC Degradation**: Epistemic uncertainty discrimination drops from 0.7138 (validation OOF) to 0.5994 on test data.
+  4. **Test UQS AUROC Degradation**: Epistemic uncertainty discrimination drops from 0.7138 (validation OOF) to 0.5994 on test data (weak discriminative power under temporal distribution shift).
   5. **Stealth Misses**: Pointwise detector recall of 73.71% misses 107 stealth attack hours during ramp-up.
-  6. **Operational Response Latency**: Trust verification introduces an operational delay trade-off (+0.85h to +2.00h over baseline persistence).
+  6. **Operational Response Latency**: Trust verification introduces an operational delay trade-off (+1.71h to +2.00h over baseline persistence).
+  7. **Probability Calibration Transfer Failure**: Supervised calibrators (Platt scaling: test ECE 0.0546 $\\to$ 0.0555, Brier 0.0576 $\\to$ 0.0673; Isotonic regression: test ECE 0.0536, Brier 0.0610) do not transfer to the test period due to a ~3.75x attack prevalence shift (5.9% in validation pool vs. 19.5% on test set).
 - **Verification Command**:
   ```bash
   python -c "txt = open('docs/MANUSCRIPT_REVISION.md', encoding='utf-8').read(); print('Outperformed by Ridge:', 'outperformed by a simpler' in txt); print('Threats to Validity:', 'Threats to Validity' in txt)"
