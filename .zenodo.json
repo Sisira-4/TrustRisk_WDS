@@ -1,0 +1,27 @@
+{
+  "title": "TrustRisk-WDS: Replication Package and Benchmark Data",
+  "version": "v1.0.0",
+  "description": "Complete replication package for TrustRisk-WDS: trust-gated alert triage and physics-grounded hydraulic risk prioritization for municipal water distribution systems.",
+  "creators": [
+    {
+      "name": "TODO-HUMAN",
+      "affiliation": "TODO-HUMAN",
+      "orcid": "TODO-HUMAN"
+    }
+  ],
+  "access_right": "open",
+  "license": "MIT",
+  "keywords": [
+    "water-distribution-systems",
+    "cyber-physical-systems",
+    "anomaly-detection",
+    "alert-triage",
+    "trust-scoring",
+    "hydraulic-consequence",
+    "epanet",
+    "wntr",
+    "batadal"
+  ],
+  "upload_type": "software",
+  "doi": "TODO-HUMAN"
+}

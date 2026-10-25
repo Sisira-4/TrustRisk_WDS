@@ -1,0 +1,29 @@
+[
+  {
+    "Dataset Split": "Training (BATADAL Dataset 03)",
+    "Total Hours (Rows)": 8761,
+    "Confirmed Normal (0)": 8761,
+    "Unlabelled (-999)": 0,
+    "Attack Hours (1)": 0,
+    "Attack Events": 0,
+    "Margin Masked (\u00b148h)": 0
+  },
+  {
+    "Dataset Split": "Cross-Validation (BATADAL Dataset 04)",
+    "Total Hours (Rows)": 4177,
+    "Confirmed Normal (0)": 0,
+    "Unlabelled (-999)": 3958,
+    "Attack Hours (1)": 219,
+    "Attack Events": 5,
+    "Margin Masked (\u00b148h)": 480
+  },
+  {
+    "Dataset Split": "Test (BATADAL Test Labeled)",
+    "Total Hours (Rows)": 2089,
+    "Confirmed Normal (0)": 1682,
+    "Unlabelled (-999)": 0,
+    "Attack Hours (1)": 407,
+    "Attack Events": 7,
+    "Margin Masked (\u00b148h)": 0
+  }
+]

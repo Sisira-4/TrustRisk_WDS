@@ -1,0 +1,28 @@
+{
+  "name": "v3_residual_ridge",
+  "train": {
+    "source": "data/raw/BATADAL_dataset04.csv",
+    "rows": "ATT_FLAG == -999 unlabelled provisional training pool (> margin_hours from labelled attacks; never treated as confirmed normal)",
+    "margin_hours": 48
+  },
+  "model": {
+    "type": "ridge_residual",
+    "alpha": 10.0,
+    "lags": 1,
+    "score": "top3_mean_z",
+    "n_top": 3
+  },
+  "threshold": {
+    "quantile": 99.0,
+    "source": "dataset04_margin_free_pool"
+  },
+  "persistence": {
+    "enabled": true,
+    "k": 3,
+    "n": 6,
+    "causal": true
+  },
+  "test_file": "data/raw/BATADAL_test_dataset_labeled.csv",
+  "notes": "Adopted Configuration (Ridge alpha=10.0, Top-3, Persistence 3-of-6, q=99.0). Settings fixed in config/trustrisk.yaml before test evaluation.",
+  "authoritative_config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee"
+}

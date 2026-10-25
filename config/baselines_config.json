@@ -1,0 +1,41 @@
+{
+  "protocol": {
+    "training_pool": "BATADAL_dataset04_margin_free_gt48h_from_attacks",
+    "unlabelled_quarantine": "LABEL == -999 strictly excluded from normal pool",
+    "threshold_quantile": 99.0,
+    "persistence_rule": "3_of_6_rolling_hours",
+    "test_evaluation": "single_shot_official_batadal_test_2089h"
+  },
+  "models": {
+    "LightGBM_Tabular_Residual": {
+      "architecture": "Multi-Sensor Lagged Gradient Boosted Regressor",
+      "n_estimators": 30,
+      "max_depth": 3,
+      "lags": 1,
+      "aggregation": "top_3_sensors_zscore_mean",
+      "random_state": 42
+    },
+    "LSTM_Autoencoder": {
+      "architecture": "Unsupervised Spatio-Temporal Sequence Autoencoder",
+      "window_size": 12,
+      "hidden_dim": 32,
+      "num_layers": 1,
+      "learning_rate": 0.005,
+      "epochs": 5,
+      "batch_size": 128,
+      "seeds": [
+        42,
+        123,
+        999
+      ]
+    },
+    "Physical_GNN": {
+      "architecture": "Graph Neural Network + Temporal GRU (Physical Topology)",
+      "checkpoint": "models/gnn_gru/physical_gnn_gru_model_C.pth",
+      "window_size": 12,
+      "threshold": 0.97,
+      "status": "legacy_protocol_not_comparable",
+      "note": "Evaluated at legacy validation threshold 0.97 without temporal persistence. Not directly comparable to 3-of-6 persistence protocol."
+    }
+  }
+}

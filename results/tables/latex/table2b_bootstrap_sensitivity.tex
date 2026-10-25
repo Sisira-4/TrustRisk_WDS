@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{Temporal-Dependence Bootstrap Sensitivity Analysis}
+\label{tab:bootstrap_sensitivity}
+\begin{tabular}{lccccc}
+\toprule
+Methodology & Block Size ($L$) & Blocks & Median $F_1$ & Std Error & 95\% Empirical CI \\
+\midrule
+Standard i.i.d. Bootstrap & 1 hour & 2,089 & 0.8368 & 0.0148 & [0.8079, 0.8659] \\
+Moving-Block (12h) & 12 hours & 175 & 0.8389 & 0.0373 & [0.7586, 0.9022] \\
+Moving-Block (24h) & 24 hours & 88 & 0.8372 & 0.0464 & [0.7294, 0.9147] \\
+Moving-Block (48h) & 48 hours & 44 & 0.8372 & 0.0578 & [0.7015, 0.9241] \\
+\bottomrule
+\end{tabular}
+\end{table}

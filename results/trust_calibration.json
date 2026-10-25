@@ -1,0 +1,54 @@
+{
+  "config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee",
+  "validation": {
+    "ece_before": 0.019772759412762957,
+    "ece_after": 0.005236570488978755,
+    "brier_before": 0.02586505563473712,
+    "brier_after": 0.02409498341098581,
+    "nll_before": 0.13857508591950096,
+    "nll_after": 0.10366963849805062,
+    "uqs_auroc": 0.713819761114008,
+    "uqs_auroc_ci": [
+      0.6508173396088414,
+      0.7644658435317964
+    ]
+  },
+  "test": {
+    "ece_before": 0.05457250345329999,
+    "ece_after": 0.05549956726226663,
+    "brier_before": 0.057623123919620926,
+    "brier_after": 0.06732316311640299,
+    "nll_before": 0.30194276825293725,
+    "nll_after": 0.27313585970263843,
+    "uqs_auroc": 0.5993958149130563,
+    "uqs_auroc_ci": [
+      0.5460086503224081,
+      0.6484605123402337
+    ]
+  },
+  "isotonic": {
+    "validation_ece": 2.304516306018973e-18,
+    "validation_brier": 0.02242088334143214,
+    "test_ece": 0.05362129988765031,
+    "test_brier": 0.06103106644287045
+  },
+  "calibration_limitation_note": "Platt scaling and Isotonic regression do not transfer to test period due to a ~3.75x attack prevalence shift (5.9% in validation pool vs 19.5% on test).",
+  "platt_scale": 0.37500821840898335,
+  "platt_bias": -4.653164104237502,
+  "effective_temperature": 2.6666082259280026,
+  "ers_stats": {
+    "min": 0.6801673101673102,
+    "mean": 0.9535736742007686,
+    "max": 1.0,
+    "std": 0.06353151135514212,
+    "attack_mean": 0.9875684213522051,
+    "normal_mean": 0.9453478346700702,
+    "fp_mean": 0.9211454311454311,
+    "attack_fp_diff": 0.066422990206774
+  },
+  "ati_counts": {
+    "action": 7,
+    "review": 1323,
+    "monitor": 759
+  }
+}

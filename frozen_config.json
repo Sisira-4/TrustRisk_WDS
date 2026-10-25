@@ -1,0 +1,31 @@
+{
+  "name": "v3_residual_ridge_alpha10",
+  "detector_type": "MultiSensorResidualDetector",
+  "ridge_alpha": 10.0,
+  "lags": 1,
+  "n_top": 3,
+  "score_aggregation": "top3_mean_z",
+  "threshold_quantile": 99.0,
+  "threshold_source": "dataset04_margin_free_pool",
+  "persistence": {
+    "enabled": true,
+    "k": 3,
+    "n": 6,
+    "causal": true
+  },
+  "train_source": "data/raw/BATADAL_dataset04.csv",
+  "train_margin_hours": 48,
+  "test_file": "data/raw/BATADAL_test_dataset_labeled.csv",
+  "cv_performance": {
+    "validation_protocol": "5-fold event-held-out CV with +-48h margins",
+    "pooled_tpr": 0.7717,
+    "pooled_fpr_per_hour": 0.0219,
+    "pooled_pointwise_f1": 0.7284,
+    "projected_f1": 0.8289
+  },
+  "frozen_at": "2026-10-11T15:39:00+05:30",
+  "status": "FROZEN_BEFORE_TEST_EVALUATION",
+  "checkpoint_file": "models/detector/frozen_detector_checkpoint.pkl",
+  "checkpoint_sha256": "5758d9eb92ceb0cbd01cd361bdc350ca4f07d013ea401dd1e494caa3e030d8e2",
+  "authoritative_config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee"
+}

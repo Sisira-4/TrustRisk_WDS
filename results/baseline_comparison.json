@@ -1,0 +1,555 @@
+{
+  "Physical_GNN": {
+    "pointwise_f1": 0.2282,
+    "pointwise_precision": 0.7333,
+    "pointwise_recall": 0.1351,
+    "tp": 55,
+    "fp": 20,
+    "fn": 352,
+    "tn": 1662,
+    "pa_f1": 0.8365,
+    "pa_precision": 0.9388,
+    "pa_recall": 0.7543,
+    "pa_tp": 307,
+    "pa_fp": 20,
+    "pa_fn": 100,
+    "pa_tn": 1662,
+    "roc_auc": 0.6954,
+    "pr_auc": 0.4365,
+    "events_detected": "5 / 7",
+    "detected_events_count": 5,
+    "total_events_count": 7,
+    "false_alarm_events": 5,
+    "mean_delay_h": 31.29,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": false,
+        "delay_hours": null
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": true,
+        "delay_hours": 23
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 12
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 5
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": true,
+        "delay_hours": 50
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": true,
+        "delay_hours": 29
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": false,
+        "delay_hours": null
+      }
+    ],
+    "protocol": "legacy_protocol_not_comparable",
+    "note": "Evaluated at legacy validation threshold without temporal persistence. Not directly comparable to 3-of-6 persistence protocol."
+  },
+  "LSTM_Autoencoder": {
+    "pointwise_f1": 0.2306,
+    "pointwise_precision": 0.6042,
+    "pointwise_recall": 0.1425,
+    "tp": 58,
+    "fp": 38,
+    "fn": 349,
+    "tn": 1644,
+    "pa_f1": 0.2446,
+    "pa_precision": 0.62,
+    "pa_recall": 0.1523,
+    "pa_tp": 62,
+    "pa_fp": 38,
+    "pa_fn": 345,
+    "pa_tn": 1644,
+    "roc_auc": 0.7155,
+    "pr_auc": 0.5049,
+    "events_detected": "2 / 7",
+    "detected_events_count": 2,
+    "total_events_count": 7,
+    "false_alarm_events": 3,
+    "mean_delay_h": 49.86,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": false,
+        "delay_hours": null
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": false,
+        "delay_hours": null
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": false,
+        "delay_hours": null
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": false,
+        "delay_hours": null
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": false,
+        "delay_hours": null
+      }
+    ],
+    "seed": 42,
+    "pw_f1_std": 0.0,
+    "pa_f1_std": 0.0,
+    "roc_auc_mean": 0.7229,
+    "roc_auc_std": 0.0058,
+    "pr_auc_mean": 0.5106,
+    "pr_auc_std": 0.0045,
+    "seeds_evaluated": [
+      42,
+      123,
+      999
+    ]
+  },
+  "LightGBM_Tabular_Residual": {
+    "pointwise_f1": 0.7116,
+    "pointwise_precision": 0.9827,
+    "pointwise_recall": 0.5577,
+    "tp": 227,
+    "fp": 4,
+    "fn": 180,
+    "tn": 1678,
+    "pa_f1": 0.9951,
+    "pa_precision": 0.9903,
+    "pa_recall": 1.0,
+    "pa_tp": 407,
+    "pa_fp": 4,
+    "pa_fn": 0,
+    "pa_tn": 1678,
+    "roc_auc": 0.9068,
+    "pr_auc": 0.8329,
+    "events_detected": "7 / 7",
+    "detected_events_count": 7,
+    "total_events_count": 7,
+    "false_alarm_events": 2,
+    "mean_delay_h": 5.57,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": true,
+        "delay_hours": 7
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": true,
+        "delay_hours": 11
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": true,
+        "delay_hours": 4
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": true,
+        "delay_hours": 3
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": true,
+        "delay_hours": 10
+      }
+    ]
+  },
+  "Raw_Threshold": {
+    "pointwise_f1": 0.8115,
+    "pointwise_precision": 0.9792,
+    "pointwise_recall": 0.6929,
+    "tp": 282,
+    "fp": 6,
+    "fn": 125,
+    "tn": 1676,
+    "pa_f1": 0.9927,
+    "pa_precision": 0.9855,
+    "pa_recall": 1.0,
+    "pa_tp": 407,
+    "pa_fp": 6,
+    "pa_fn": 0,
+    "pa_tn": 1676,
+    "roc_auc": 0.918,
+    "pr_auc": 0.8684,
+    "events_detected": "7 / 7",
+    "detected_events_count": 7,
+    "total_events_count": 7,
+    "false_alarm_events": 4,
+    "mean_delay_h": 1.57,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 0
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 0
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": true,
+        "delay_hours": 0
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": true,
+        "delay_hours": 0
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": true,
+        "delay_hours": 8
+      }
+    ]
+  },
+  "Persistence_Rule": {
+    "pointwise_f1": 0.8368,
+    "pointwise_precision": 0.9677,
+    "pointwise_recall": 0.7371,
+    "tp": 300,
+    "fp": 10,
+    "fn": 107,
+    "tn": 1672,
+    "pa_f1": 0.9879,
+    "pa_precision": 0.976,
+    "pa_recall": 1.0,
+    "pa_tp": 407,
+    "pa_fp": 10,
+    "pa_fn": 0,
+    "pa_tn": 1672,
+    "roc_auc": 0.918,
+    "pr_auc": 0.8684,
+    "events_detected": "7 / 7",
+    "detected_events_count": 7,
+    "total_events_count": 7,
+    "false_alarm_events": 3,
+    "mean_delay_h": 4.86,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": true,
+        "delay_hours": 7
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": true,
+        "delay_hours": 11
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": true,
+        "delay_hours": 10
+      }
+    ]
+  },
+  "MultiSensor_Ridge_Residual_Ours": {
+    "pointwise_f1": 0.8368,
+    "pointwise_precision": 0.9677,
+    "pointwise_recall": 0.7371,
+    "tp": 300,
+    "fp": 10,
+    "fn": 107,
+    "tn": 1672,
+    "pa_f1": 0.9879,
+    "pa_precision": 0.976,
+    "pa_recall": 1.0,
+    "pa_tp": 407,
+    "pa_fp": 10,
+    "pa_fn": 0,
+    "pa_tn": 1672,
+    "roc_auc": 0.918,
+    "pr_auc": 0.8684,
+    "events_detected": "7 / 7",
+    "detected_events_count": 7,
+    "total_events_count": 7,
+    "false_alarm_events": 3,
+    "mean_delay_h": 4.86,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": true,
+        "delay_hours": 7
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": true,
+        "delay_hours": 11
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": true,
+        "delay_hours": 10
+      }
+    ]
+  },
+  "TrustRisk_WDS_Policy4_TrustGate": {
+    "pointwise_f1": 0.8368,
+    "pointwise_precision": 0.9677,
+    "pointwise_recall": 0.7371,
+    "tp": 300,
+    "fp": 10,
+    "fn": 107,
+    "tn": 1672,
+    "pa_f1": 0.9879,
+    "pa_precision": 0.976,
+    "pa_recall": 1.0,
+    "pa_tp": 407,
+    "pa_fp": 10,
+    "pa_fn": 0,
+    "pa_tn": 1672,
+    "roc_auc": 0.918,
+    "pr_auc": 0.8684,
+    "events_detected": "7 / 7",
+    "detected_events_count": 7,
+    "total_events_count": 7,
+    "false_alarm_events": 0,
+    "action_fa_events": 0,
+    "mean_delay_h": 5.71,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": true,
+        "delay_hours": 7
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": true,
+        "delay_hours": 11
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": true,
+        "delay_hours": 10
+      }
+    ]
+  },
+  "TrustRisk_WDS_Policy5_TrustRiskGate": {
+    "pointwise_f1": 0.8368,
+    "pointwise_precision": 0.9677,
+    "pointwise_recall": 0.7371,
+    "tp": 300,
+    "fp": 10,
+    "fn": 107,
+    "tn": 1672,
+    "pa_f1": 0.9879,
+    "pa_precision": 0.976,
+    "pa_recall": 1.0,
+    "pa_tp": 407,
+    "pa_fp": 10,
+    "pa_fn": 0,
+    "pa_tn": 1672,
+    "roc_auc": 0.918,
+    "pr_auc": 0.8684,
+    "events_detected": "7 / 7",
+    "detected_events_count": 7,
+    "total_events_count": 7,
+    "false_alarm_events": 0,
+    "action_fa_events": 0,
+    "mean_delay_h": 6.86,
+    "per_attack_outcomes": [
+      {
+        "event_index": 1,
+        "length_hours": 70,
+        "detected": true,
+        "delay_hours": 7
+      },
+      {
+        "event_index": 2,
+        "length_hours": 65,
+        "detected": true,
+        "delay_hours": 11
+      },
+      {
+        "event_index": 3,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 4,
+        "length_hours": 31,
+        "detected": true,
+        "delay_hours": 2
+      },
+      {
+        "event_index": 5,
+        "length_hours": 100,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 6,
+        "length_hours": 80,
+        "detected": true,
+        "delay_hours": 1
+      },
+      {
+        "event_index": 7,
+        "length_hours": 30,
+        "detected": true,
+        "delay_hours": 10
+      }
+    ]
+  },
+  "config_sha256": "c69ef2bbe33e8631b851e146636aa89f00514ebb504b9ea481ea78ec6f5032ee"
+}

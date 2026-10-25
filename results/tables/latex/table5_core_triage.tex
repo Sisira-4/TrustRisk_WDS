@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\caption{Controlled Alert Triage 5-Policy Evaluation Matrix (BATADAL Test Set)}
+\label{tab:core_triage}
+\begin{tabular}{lcccccc}
+\toprule
+Triage Policy & Preserved & Action Tier & Lost & Action FA Events [95\% CI] & FA Red. & Mean Delay [95\% CI] \\
+\midrule
+\textbf{P1: Raw Detector Threshold} & \textbf{7/7} & 7 & 0 & \textbf{4} [1.0, 8.0] & \textbf{-33.3\%} & 1.57 h [0.00, 3.71] \\
+\textbf{P2: Temporal Persistence Smoothing} & \textbf{7/7} & 7 & 0 & \textbf{3} [1.0, 6.0] & \textbf{+0.0\%} & 4.86 h [1.86, 8.00] \\
+\textbf{P3: Confidence-Only Gating (PCS)} & \textbf{7/7} & 7 & 0 & \textbf{0} [0.0, 0.0] & \textbf{+100.0\%} & 6.57 h [1.86, 12.86] \\
+\textbf{P4: Trust-Gated Triage (Full ATI)} & \textbf{7/7} & 1 & 0 & \textbf{0} [0.0, 0.0] & \textbf{+100.0\%} & 5.71 h [2.29, 9.57] \\
+\textbf{P5: Trust + Risk Gate (ATI x TDCRI)} & \textbf{7/7} & 2 & 0 & \textbf{0} [0.0, 0.0] & \textbf{+100.0\%} & 6.86 h [3.14, 10.57] \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "title": "Dataset 04 Triage Cross-Validation Grid Search",
+    "dataset": "BATADAL_dataset04 (Leave-One-Attack-Event-Out, 5 Folds)",
+    "timestamp": "2026-10-19T18:24:59.293046",
+    "selection_rule": "Attacks Preserved == 5/5 -> min Action FA events -> min Mean Delay"
+  },
+  "chosen_configuration": {
+    "w_pcs": 0.3,
+    "w_uqs": 0.4,
+    "w_ers": 0.3,
+    "action_cutoff": 0.85,
+    "review_cutoff": 0.5,
+    "policy3_pcs_cutoff": 0.85,
+    "validation_metrics": {
+      "attacks_preserved": "5/5",
+      "action_fa_events": 4,
+      "review_fa_events": 16,
+      "mean_delay_hours": 14.6
+    }
+  },
+  "top_10_candidates": [
+    {
+      "w_pcs": 0.3,
+      "w_uqs": 0.4,
+      "w_ers": 0.3,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 4,
+      "review_fa_events": 16,
+      "mean_delay_hours": 14.6
+    },
+    {
+      "w_pcs": 0.35,
+      "w_uqs": 0.4,
+      "w_ers": 0.25,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 4,
+      "review_fa_events": 15,
+      "mean_delay_hours": 15.2
+    },
+    {
+      "w_pcs": 0.35,
+      "w_uqs": 0.35,
+      "w_ers": 0.3,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 15,
+      "mean_delay_hours": 13.4
+    },
+    {
+      "w_pcs": 0.3,
+      "w_uqs": 0.35,
+      "w_ers": 0.35,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 17,
+      "mean_delay_hours": 13.4
+    },
+    {
+      "w_pcs": 0.5,
+      "w_uqs": 0.35,
+      "w_ers": 0.15,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 11,
+      "mean_delay_hours": 14.0
+    },
+    {
+      "w_pcs": 0.45,
+      "w_uqs": 0.35,
+      "w_ers": 0.2,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 11,
+      "mean_delay_hours": 14.0
+    },
+    {
+      "w_pcs": 0.4,
+      "w_uqs": 0.35,
+      "w_ers": 0.25,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 13,
+      "mean_delay_hours": 14.0
+    },
+    {
+      "w_pcs": 0.55,
+      "w_uqs": 0.4,
+      "w_ers": 0.05,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 8,
+      "mean_delay_hours": 15.0
+    },
+    {
+      "w_pcs": 0.5,
+      "w_uqs": 0.4,
+      "w_ers": 0.1,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 8,
+      "mean_delay_hours": 15.0
+    },
+    {
+      "w_pcs": 0.45,
+      "w_uqs": 0.4,
+      "w_ers": 0.15,
+      "action_cutoff": 0.85,
+      "review_cutoff": 0.5,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 5,
+      "review_fa_events": 9,
+      "mean_delay_hours": 15.0
+    }
+  ],
+  "policy3_results": [
+    {
+      "policy": "Policy 3",
+      "pcs_cutoff": 0.7,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 13,
+      "mean_delay_hours": 9.4
+    },
+    {
+      "policy": "Policy 3",
+      "pcs_cutoff": 0.75,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 13,
+      "mean_delay_hours": 9.4
+    },
+    {
+      "policy": "Policy 3",
+      "pcs_cutoff": 0.8,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 13,
+      "mean_delay_hours": 9.4
+    },
+    {
+      "policy": "Policy 3",
+      "pcs_cutoff": 0.85,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 13,
+      "mean_delay_hours": 9.4
+    },
+    {
+      "policy": "Policy 3",
+      "pcs_cutoff": 0.9,
+      "attacks_preserved": "5/5",
+      "attacks_lost": 0,
+      "action_fa_events": 15,
+      "mean_delay_hours": 9.4
+    }
+  ]
+}
